@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthAssist - AI Healthcare Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏥</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>HealthAssist</h1>
+                        <p>AI-Powered Healthcare Assistant</p>
+                    </div>
+                </div>
+                <div class="header-controls">
+                    <button id="voice-btn" class="control-btn" title="Voice Input">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button id="tts-btn" class="control-btn active" title="Text-to-Speech">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <button id="api-key-btn" class="control-btn" title="Set API Key">
+                        <i class="fas fa-key"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- API Key Modal -->
+        <div class="modal" id="api-key-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Set Gemini API Key</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>To use HealthAssist, you need a Google Gemini API key:</p>
+                    <ol>
+                        <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                        <li>Create a new API key</li>
+                        <li>Paste it below</li>
+                    </ol>
+                    <div class="input-group">
+                        <input type="password" id="api-key-input" placeholder="Enter your Gemini API key">
+                        <button id="save-api-key">Save Key</button>
+                    </div>
+                    <div class="security-note">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Your API key is stored locally in your browser and never sent to our servers</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <main class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <!-- Welcome message -->
+                <div class="message-wrapper welcome-message">
+                    <div class="message-bubble bot-message welcome-bubble">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <h3>Hello! I'm HealthAssist</h3>
+                            <p>Your AI healthcare assistant. I'm here to provide general health information and answer your questions.</p>
+                            <div class="suggestion-chips">
+                                <button class="suggestion-chip" data-query="What are common cold symptoms?">Common cold symptoms</button>
+                                <button class="suggestion-chip" data-query="What are some healthy diet tips?">Healthy diet tips</button>
+                                <button class="suggestion-chip" data-query="How to provide first aid for burns?">First aid for burns</button>
+                                <button class="suggestion-chip" data-query="What are good stress management techniques?">Stress management</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Area -->
+        <footer class="input-area">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <button id="voice-toggle" class="voice-toggle">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        placeholder="Describe your symptoms or ask a health-related question..." 
+                        class="user-input"
+                    >
+                    <button id="send-btn" class="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <div class="security-notice">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Your conversations are private and secure</span>
+                    </div>
+                    <div class="info-notice">
+                        <i class="fas fa-info-circle"></i>
+                        <span>For informational purposes only</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Voice Recognition Indicator -->
+        <div class="voice-indicator" id="voice-indicator">
+            <div class="voice-pulse"></div>
+            <div class="voice-icon">
+                <i class="fas fa-microphone"></i>
+            </div>
+            <p>Listening... Speak now</p>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading-indicator" id="loading-indicator">
+            <div class="loading-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <span>HealthAssist is thinking...</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
