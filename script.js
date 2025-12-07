@@ -3,15 +3,76 @@ const chatContainer = document.querySelector(".chat-list");
 const suggestions = document.querySelectorAll(".suggestion");
 const toggleThemeButton = document.querySelector("#theme-toggle-button");
 const deleteChatButton = document.querySelector("#delete-chat-button");
+const voiceInputButton = document.querySelector("#voice-input-button");
 
 // State variables
 let userMessage = null;
 let isResponseGenerating = false;
+let isListening = false;
+let recognition = null;
 
 // API configuration
-const API_KEY = "AIzaSyAHuzmpxhxnNeuWV-Y_buBIlLhQcDtMnXY"; // <-- 2. Your API key inserted
-// Use gemini-2.5-flash for faster chat responses and better free-tier limits
+const API_KEY = "AIzaSyAQqIEyVtBzhrovYRW82y0cbGVd8k0l5_w"; // <-- 2. Your API key inserted // Use gemini-2.5-flash for faster chat responses and better free-tier limits
 const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+
+// Check for browser support and initialize speech recognition
+const initSpeechRecognition = () => {
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    
+    recognition.onstart = () => {
+      isListening = true;
+      voiceInputButton.classList.add('listening');
+      voiceInputButton.innerHTML = 'mic';
+    };
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      const typingInput = document.querySelector('.typing-input');
+      typingInput.value = transcript;
+      typingInput.focus();
+      
+      // Trigger the input event to show send button
+      typingInput.dispatchEvent(new Event('input'));
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        alert('Please allow microphone access to use voice input.');
+      }
+    };
+    
+    recognition.onend = () => {
+      isListening = false;
+      voiceInputButton.classList.remove('listening');
+      voiceInputButton.innerHTML = 'mic';
+    };
+  } else {
+    voiceInputButton.style.display = 'none';
+    console.warn('Speech recognition not supported in this browser.');
+  }
+};
+
+// Toggle voice recognition
+const toggleVoiceRecognition = () => {
+  if (!recognition) {
+    alert('Speech recognition is not supported in your browser.');
+    return;
+  }
+  
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+};
+
 // Load theme and chat data from local storage on page load
 const loadDataFromLocalstorage = () => {
   const savedChats = localStorage.getItem("saved-chats");
@@ -169,4 +230,9 @@ typingForm.addEventListener("submit", (e) => {
   handleOutgoingChat();
 });
 
+// Add click event for voice input button
+voiceInputButton.addEventListener("click", toggleVoiceRecognition);
+
+// Initialize speech recognition and load data
+initSpeechRecognition();
 loadDataFromLocalstorage();
