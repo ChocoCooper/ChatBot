@@ -9,7 +9,7 @@ let userMessage = null;
 let isResponseGenerating = false;
 
 // API configuration
-const API_KEY = "AIzaSyBIkeyA5KhlgBvURgjFMSQn8oRvbqVOn8U"; // <-- 2. Your API key inserted
+const API_KEY = "AIzaSyAHuzmpxhxnNeuWV-Y_buBIlLhQcDtMnXY"; // <-- 2. Your API key inserted
 // Use gemini-2.5-flash for faster chat responses and better free-tier limits
 const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 // Load theme and chat data from local storage on page load
