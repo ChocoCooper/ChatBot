@@ -36,9 +36,6 @@ const initSpeechRecognition = () => {
       const typingInput = document.querySelector('.typing-input');
       typingInput.value = transcript;
       typingInput.focus();
-      
-      // Trigger the input event to show send button
-      typingInput.dispatchEvent(new Event('input'));
     };
     
     recognition.onerror = (event) => {
