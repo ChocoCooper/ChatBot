@@ -342,3 +342,74 @@ body.hide-header .header {
     margin-top: 0.5rem;
   }
 }
+
+/* ... (previous CSS code remains the same) ... */
+
+/* Voice recognition icon styles - Not a button, just an icon */
+.typing-form .voice-btn {
+  position: absolute;
+  right: 20px; /* Increased from 60px to 75px */
+  /* Remove all button styling */
+  background: none !important;
+  box-shadow: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  /* Style as an icon */
+  color: var(--placeholder-color);
+  font-size: 1.4rem;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.typing-form .voice-btn:hover {
+  color: var(--text-color);
+  background: none !important;
+  transform: none; /* Remove any transform if present */
+}
+
+.typing-form .voice-btn.listening {
+  color: #4285f4;
+  animation: none;
+}
+
+/* Remove any button-like hover effects */
+.typing-form .voice-btn:hover {
+  background: none !important;
+}
+
+/* Adjust positioning to align with text */
+.typing-form .input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.typing-form .typing-input {
+  padding: 1.1rem 5rem 1.1rem 1.5rem;
+}
+
+/* Make sure the icon is properly centered vertically */
+.typing-form .voice-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .typing-form .typing-input {
+    padding: 1.1rem 4.5rem 1.1rem 1.2rem;
+  }
+  
+  .typing-form .voice-btn {
+    right: 20px; /* Increased from 50px to 60px for mobile */
+    font-size: 1.3rem;
+  }
+}
