@@ -309,7 +309,117 @@ body.hide-header .header {
   color: var(--placeholder-color);
 }
 
-/* Responsive media query code for small screen */
+/* Voice recognition icon styles */
+.typing-form .voice-btn {
+  position: absolute;
+  right: 20px; 
+  background: none !important;
+  box-shadow: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: var(--placeholder-color);
+  font-size: 1.4rem;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.typing-form .voice-btn:hover {
+  color: var(--text-color);
+  background: none !important;
+  transform: none; 
+}
+
+.typing-form .voice-btn.listening {
+  color: #4285f4;
+  animation: none;
+}
+
+.typing-form .input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.typing-form .typing-input {
+  padding: 1.1rem 5rem 1.1rem 1.5rem;
+}
+
+.typing-form .voice-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* --- NEW: Image Upload & Preview Styles --- */
+
+.hide { display: none !important; }
+
+/* The preview box floating above the input */
+#image-preview-container {
+  position: absolute;
+  bottom: 75px; /* Sits above the typing area */
+  left: 20px;
+  background: var(--secondary-color);
+  padding: 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+#image-preview {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+#remove-image-button {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+/* Thumbnail inside the outgoing chat bubble */
+.attachment-thumb {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: block;
+  object-fit: contain;
+}
+
+.text-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Adjustments for the extra button in input wrapper */
+.typing-form .input-wrapper {
+    gap: 10px; /* Space between image button and text input */
+}
+.typing-form #image-upload-button {
+    flex-shrink: 0; /* Prevents button from shrinking */
+}
+
 @media (max-width: 768px) {
   .header :is(.title, .subtitle) {
     font-size: 2rem;
@@ -329,7 +439,7 @@ body.hide-header .header {
   }
 
   .typing-form .typing-input {
-    padding: 1.1rem 3.5rem 1.1rem 1.2rem;
+    padding: 1.1rem 4.5rem 1.1rem 1.2rem;
   }
 
   .typing-area .icon {
@@ -341,75 +451,9 @@ body.hide-header .header {
     font-size: 0.75rem;
     margin-top: 0.5rem;
   }
-}
-
-/* ... (previous CSS code remains the same) ... */
-
-/* Voice recognition icon styles - Not a button, just an icon */
-.typing-form .voice-btn {
-  position: absolute;
-  right: 20px; /* Increased from 60px to 75px */
-  /* Remove all button styling */
-  background: none !important;
-  box-shadow: none;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  /* Style as an icon */
-  color: var(--placeholder-color);
-  font-size: 1.4rem;
-  width: auto;
-  height: auto;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease;
-}
-
-.typing-form .voice-btn:hover {
-  color: var(--text-color);
-  background: none !important;
-  transform: none; /* Remove any transform if present */
-}
-
-.typing-form .voice-btn.listening {
-  color: #4285f4;
-  animation: none;
-}
-
-/* Remove any button-like hover effects */
-.typing-form .voice-btn:hover {
-  background: none !important;
-}
-
-/* Adjust positioning to align with text */
-.typing-form .input-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.typing-form .typing-input {
-  padding: 1.1rem 5rem 1.1rem 1.5rem;
-}
-
-/* Make sure the icon is properly centered vertically */
-.typing-form .voice-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .typing-form .typing-input {
-    padding: 1.1rem 4.5rem 1.1rem 1.2rem;
-  }
   
   .typing-form .voice-btn {
-    right: 20px; /* Increased from 50px to 60px for mobile */
+    right: 20px;
     font-size: 1.3rem;
   }
 }
