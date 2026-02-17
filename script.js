@@ -118,11 +118,12 @@ function initChatApp() {
     const API_KEY = CONFIG.API_KEY; 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-    // --- FIX: ROBUST SCROLL FUNCTION ---
+    // --- FIX: SCROLL WINDOW FUNCTION ---
+    // This now scrolls the main window instead of the container
     const scrollToBottom = () => {
-        // Use requestAnimationFrame to ensure DOM is updated before scrolling
-        requestAnimationFrame(() => {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: "smooth"
         });
     }
 
@@ -222,7 +223,7 @@ function initChatApp() {
         const typingInterval = setInterval(() => {
             textElement.innerText += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex++];
             
-            // FIX: Force scroll on every new word
+            // FIX: Scroll window on every new word
             scrollToBottom();
 
             if (currentWordIndex === words.length) {
