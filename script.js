@@ -23,7 +23,7 @@ let selectedImage = null; // Stores { mime_type, data }
 
 // API configuration
 const API_KEY = CONFIG.API_KEY; // <-- PASTE YOUR API KEY HERE
-const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
 // --- NEW: IMAGE HANDLING FUNCTIONS ---
 
@@ -168,7 +168,6 @@ const generateAPIResponse = async (incomingMessageDiv) => {
   }
 
   // 2. Combine history with current turn
-  // Note: We use chatHistory for context, but we add the NEW message with image manually
   const historyForAPI = [
     ...chatHistory.slice(-10), 
     { role: "user", parts: userRequestParts }
@@ -193,15 +192,13 @@ const generateAPIResponse = async (incomingMessageDiv) => {
     const apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
     
     // 3. Update History
-    // IMPORTANT: We only save the TEXT to chatHistory to avoid hitting token limits
-    // with repeated base64 image strings in future requests.
+    // We update history with the response
     chatHistory.push({ role: "user", parts: [{ text: userMessage || "[Image Sent]" }] });
     chatHistory.push({ role: "model", parts: [{ text: apiResponse }] });
 
-    // Clean up UI state
+    // Clean up backend state (reset selectedImage for next turn)
     selectedImage = null;
-    imagePreviewContainer.classList.add("hide");
-    fileInput.value = "";
+    fileInput.value = ""; // Clear file input value
 
     showTypingEffect(apiResponse, textElement, incomingMessageDiv); 
   } catch (error) { 
@@ -273,6 +270,12 @@ const handleOutgoingChat = () => {
   chatContainer.appendChild(outgoingMessageDiv);
   
   typingForm.reset(); 
+  
+  // --- THIS IS THE FIX ---
+  // Hide the image preview immediately after sending
+  imagePreviewContainer.classList.add("hide");
+  // ---------------------
+
   document.body.classList.add("hide-header");
   chatContainer.scrollTo(0, chatContainer.scrollHeight); 
   setTimeout(showLoadingAnimation, 500); 
