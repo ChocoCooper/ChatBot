@@ -12,7 +12,7 @@ let isListening = false;
 let recognition = null;
 
 // API configuration
-const API_KEY = "AIzaSyAQqIEyVtBzhrovYRW82y0cbGVd8k0l5_w"; // <-- 2. Your API key inserted // Use gemini-2.5-flash for faster chat responses and better free-tier limits
+const API_KEY = CONFIG.API_KEY; // <-- 2. Your API key inserted // Use gemini-2.5-flash for faster chat responses and better free-tier limits
 const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
 // Check for browser support and initialize speech recognition
