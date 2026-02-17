@@ -33,10 +33,7 @@ registerForm.addEventListener("submit", (e) => {
     const password = document.getElementById("reg-password").value.trim();
 
     if (username && password) {
-        // Save to browser Mock DB (localStorage)
         const users = JSON.parse(localStorage.getItem("mockUsers")) || [];
-        
-        // Simple check if user exists
         if (users.find(u => u.username === username)) {
             regError.innerText = "Username already exists!";
             return;
@@ -46,7 +43,7 @@ registerForm.addEventListener("submit", (e) => {
         localStorage.setItem("mockUsers", JSON.stringify(users));
         
         alert("Registration Successful! Please login.");
-        showLoginBtn.click(); // Switch to login view
+        showLoginBtn.click(); 
     }
 });
 
@@ -60,7 +57,6 @@ loginForm.addEventListener("submit", (e) => {
     const user = users.find(u => u.username === username && u.password === password);
 
     if (user) {
-        // Set Session
         localStorage.setItem("currentUser", JSON.stringify(user));
         initializeSession(user);
     } else {
@@ -72,15 +68,14 @@ loginForm.addEventListener("submit", (e) => {
 logoutBtn.addEventListener("click", () => {
     if(confirm("Are you sure you want to logout?")) {
         localStorage.removeItem("currentUser");
-        location.reload(); // Reload to reset state
+        location.reload(); 
     }
 });
 
-// Initialize App Session (Run on load)
 function initializeSession(user) {
     authContainer.classList.add("hide");
     appContainer.classList.remove("hide");
-    userGreeting.innerText = user.username; // Personalize title
+    userGreeting.innerText = user.username; 
     
     // Initialize the Chat App Logic only after login
     initChatApp();
@@ -92,7 +87,6 @@ window.addEventListener("DOMContentLoaded", () => {
     if (currentUser) {
         initializeSession(currentUser);
     } else {
-        // Ensure auth screen is visible
         authContainer.classList.remove("hide");
         appContainer.classList.add("hide");
     }
@@ -100,7 +94,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 /* =========================================
-   CORE CHATBOT LOGIC (Wrapped in function)
+   CORE CHATBOT LOGIC
    ========================================= */
 
 function initChatApp() {
@@ -111,14 +105,12 @@ function initChatApp() {
     const deleteChatButton = document.querySelector("#delete-chat-button");
     const voiceInputButton = document.querySelector("#voice-input-button");
 
-    // Image Upload Elements
     const fileInput = document.querySelector("#file-input");
     const imageUploadButton = document.querySelector("#image-upload-button");
     const imagePreviewContainer = document.querySelector("#image-preview-container");
     const imagePreview = document.querySelector("#image-preview");
     const removeImageButton = document.querySelector("#remove-image-button");
 
-    // State variables
     let userMessage = null;
     let isResponseGenerating = false;
     let isListening = false;
@@ -126,9 +118,18 @@ function initChatApp() {
     let chatHistory = [];
     let selectedImage = null; 
 
-    // API configuration
     const API_KEY = CONFIG.API_KEY; 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+
+    // --- NEW: SCROLL HELPER FUNCTION ---
+    // Smooth scroll for messages
+    const scrollToBottomSmooth = () => {
+        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+    }
+    // Instant scroll for typing (prevents lag)
+    const scrollToBottomInstant = () => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 
     // --- IMAGE HANDLING ---
     imageUploadButton.addEventListener("click", () => fileInput.click());
@@ -172,7 +173,7 @@ function initChatApp() {
                 isListening = true;
                 voiceInputButton.classList.add('listening');
                 voiceInputButton.innerHTML = 'mic';
-                voiceInputButton.style.color = '#ef4444'; // Visual cue
+                voiceInputButton.style.color = '#ef4444'; 
             };
             
             recognition.onresult = (event) => {
@@ -200,7 +201,6 @@ function initChatApp() {
 
     // --- UI HELPERS ---
     const loadDataFromLocalstorage = () => {
-        // Note: This 'saved-chats' is separate from the Auth localStorage
         const savedChats = localStorage.getItem("saved-chats");
         const isLightMode = (localStorage.getItem("themeColor") === "light_mode");
 
@@ -209,7 +209,8 @@ function initChatApp() {
 
         chatContainer.innerHTML = savedChats || '';
         document.body.classList.toggle("hide-header", savedChats);
-        chatContainer.scrollTo(0, chatContainer.scrollHeight); 
+        
+        scrollToBottomInstant(); // Scroll to bottom on load
     };
 
     const createMessageElement = (content, ...classes) => {
@@ -219,18 +220,23 @@ function initChatApp() {
         return div;
     };
 
+    // --- UPDATED TYPING EFFECT ---
     const showTypingEffect = (text, textElement, incomingMessageDiv) => {
         const words = text.split(' ');
         let currentWordIndex = 0;
+        
         const typingInterval = setInterval(() => {
             textElement.innerText += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex++];
+            
+            // FIX: Use Instant Scroll here to prevent lag
+            scrollToBottomInstant(); 
+
             if (currentWordIndex === words.length) {
                 clearInterval(typingInterval);
                 isResponseGenerating = false;
                 incomingMessageDiv.querySelector(".icon").classList.remove("hide");
                 localStorage.setItem("saved-chats", chatContainer.innerHTML); 
             }
-            chatContainer.scrollTo(0, chatContainer.scrollHeight); 
         }, 75);
     };
 
@@ -286,7 +292,9 @@ function initChatApp() {
                       <span onClick="copyMessage(this)" class="icon material-symbols-rounded hide">content_copy</span>`;
         const incomingMessageDiv = createMessageElement(html, "incoming", "loading");
         chatContainer.appendChild(incomingMessageDiv);
-        chatContainer.scrollTo(0, chatContainer.scrollHeight); 
+        
+        scrollToBottomSmooth(); // Smooth scroll when loading starts
+        
         generateAPIResponse(incomingMessageDiv);
     };
 
@@ -324,7 +332,9 @@ function initChatApp() {
         typingForm.reset(); 
         imagePreviewContainer.classList.add("hide");
         document.body.classList.add("hide-header");
-        chatContainer.scrollTo(0, chatContainer.scrollHeight); 
+        
+        scrollToBottomSmooth(); // Smooth scroll when user sends message
+        
         setTimeout(showLoadingAnimation, 500); 
     };
 
@@ -357,7 +367,6 @@ function initChatApp() {
 
     voiceInputButton.addEventListener("click", toggleVoiceRecognition);
 
-    // Start App
     initSpeechRecognition();
     loadDataFromLocalstorage();
 }
