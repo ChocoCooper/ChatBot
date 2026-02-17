@@ -5,18 +5,64 @@ const toggleThemeButton = document.querySelector("#theme-toggle-button");
 const deleteChatButton = document.querySelector("#delete-chat-button");
 const voiceInputButton = document.querySelector("#voice-input-button");
 
+// NEW: Image Upload Elements
+const fileInput = document.querySelector("#file-input");
+const imageUploadButton = document.querySelector("#image-upload-button");
+const imagePreviewContainer = document.querySelector("#image-preview-container");
+const imagePreview = document.querySelector("#image-preview");
+const removeImageButton = document.querySelector("#remove-image-button");
+
 // State variables
 let userMessage = null;
 let isResponseGenerating = false;
 let isListening = false;
 let recognition = null;
-
-// NEW: Chat history array to help the bot remember context
 let chatHistory = [];
+// NEW: Store selected image
+let selectedImage = null; // Stores { mime_type, data }
 
 // API configuration
-const API_KEY = "YOUR_API_KEY_HERE"; // <-- PASTE YOUR API KEY HERE
+const API_KEY = CONFIG.API_KEY; // <-- PASTE YOUR API KEY HERE
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+// --- NEW: IMAGE HANDLING FUNCTIONS ---
+
+// 1. Trigger file input when button is clicked
+imageUploadButton.addEventListener("click", () => fileInput.click());
+
+// 2. Handle file selection
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // Remove the "data:image/jpeg;base64," part
+    const base64String = e.target.result.split(",")[1];
+    
+    selectedImage = {
+      inline_data: {
+        mime_type: file.type,
+        data: base64String
+      }
+    };
+
+    // Show preview
+    imagePreview.src = e.target.result;
+    imagePreviewContainer.classList.remove("hide");
+    typingForm.querySelector(".typing-input").focus();
+  };
+  reader.readAsDataURL(file);
+});
+
+// 3. Remove selected image
+removeImageButton.addEventListener("click", () => {
+  selectedImage = null;
+  fileInput.value = "";
+  imagePreviewContainer.classList.add("hide");
+});
+
+// --- EXISTING LOGIC ---
 
 // Check for browser support and initialize speech recognition
 const initSpeechRecognition = () => {
@@ -59,7 +105,6 @@ const initSpeechRecognition = () => {
   }
 };
 
-// Toggle voice recognition
 const toggleVoiceRecognition = () => {
   if (!recognition) {
     alert('Speech recognition is not supported in your browser.');
@@ -73,7 +118,6 @@ const toggleVoiceRecognition = () => {
   }
 };
 
-// Load theme and chat data from local storage on page load
 const loadDataFromLocalstorage = () => {
   const savedChats = localStorage.getItem("saved-chats");
   const isLightMode = (localStorage.getItem("themeColor") === "light_mode");
@@ -89,7 +133,6 @@ const loadDataFromLocalstorage = () => {
   chatContainer.scrollTo(0, chatContainer.scrollHeight); 
 }
 
-// Create a new message element and return it
 const createMessageElement = (content, ...classes) => {
   const div = document.createElement("div");
   div.classList.add("message", ...classes);
@@ -97,35 +140,38 @@ const createMessageElement = (content, ...classes) => {
   return div;
 }
 
-// Show typing effect by displaying words one by one
 const showTypingEffect = (text, textElement, incomingMessageDiv) => {
   const words = text.split(' ');
   let currentWordIndex = 0;
 
   const typingInterval = setInterval(() => {
-    // Append each word to the text element with a space
     textElement.innerText += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex++];
     
-    // If all words are displayed
     if (currentWordIndex === words.length) {
       clearInterval(typingInterval);
       isResponseGenerating = false;
       incomingMessageDiv.querySelector(".icon").classList.remove("hide");
-      localStorage.setItem("saved-chats", chatContainer.innerHTML); // Save chats to local storage
+      localStorage.setItem("saved-chats", chatContainer.innerHTML); 
     }
     chatContainer.scrollTo(0, chatContainer.scrollHeight); 
   }, 75);
 }
 
-// --- NEW: UPDATED API FUNCTION ---
+// --- UPDATED API FUNCTION ---
 const generateAPIResponse = async (incomingMessageDiv) => {
   const textElement = incomingMessageDiv.querySelector(".text"); 
 
-  // Add the user's message to the history temporarily for the API call
-  // We limit history to the last 10 messages to avoid hitting token limits too fast
+  // 1. Construct the current user turn (Text + Optional Image)
+  const userRequestParts = [{ text: userMessage }];
+  if (selectedImage) {
+    userRequestParts.push(selectedImage);
+  }
+
+  // 2. Combine history with current turn
+  // Note: We use chatHistory for context, but we add the NEW message with image manually
   const historyForAPI = [
     ...chatHistory.slice(-10), 
-    { role: "user", parts: [{ text: userMessage }] }
+    { role: "user", parts: userRequestParts }
   ];
 
   try {
@@ -137,7 +183,6 @@ const generateAPIResponse = async (incomingMessageDiv) => {
       }),
     });
 
-    // Handle 429 Rate Limit specifically
     if (response.status === 429) {
        throw new Error("⏳ Too fast! Please wait 30 seconds (Free Tier Limit).");
     }
@@ -145,12 +190,18 @@ const generateAPIResponse = async (incomingMessageDiv) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error.message || "Something went wrong!");
 
-    // Get the API response text
     const apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
     
-    // Success! Now update the official history with both user and model messages
-    chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+    // 3. Update History
+    // IMPORTANT: We only save the TEXT to chatHistory to avoid hitting token limits
+    // with repeated base64 image strings in future requests.
+    chatHistory.push({ role: "user", parts: [{ text: userMessage || "[Image Sent]" }] });
     chatHistory.push({ role: "model", parts: [{ text: apiResponse }] });
+
+    // Clean up UI state
+    selectedImage = null;
+    imagePreviewContainer.classList.add("hide");
+    fileInput.value = "";
 
     showTypingEffect(apiResponse, textElement, incomingMessageDiv); 
   } catch (error) { 
@@ -162,7 +213,6 @@ const generateAPIResponse = async (incomingMessageDiv) => {
   }
 }
 
-// Show a loading animation while waiting for the API response
 const showLoadingAnimation = () => {
   const html = `<div class="message-content">
                   <img class="avatar" src="gemini-avatar.png" alt="Gemini avatar">
@@ -182,28 +232,43 @@ const showLoadingAnimation = () => {
   generateAPIResponse(incomingMessageDiv);
 }
 
-// Copy message text to the clipboard
 const copyMessage = (copyButton) => {
   const messageText = copyButton.parentElement.querySelector(".text").innerText;
-
   navigator.clipboard.writeText(messageText);
   copyButton.innerText = "done"; 
   setTimeout(() => copyButton.innerText = "content_copy", 1000); 
 }
 
-// Handle sending outgoing chat messages
+// --- UPDATED OUTGOING CHAT ---
 const handleOutgoingChat = () => {
   userMessage = typingForm.querySelector(".typing-input").value.trim() || userMessage;
-  if(!userMessage || isResponseGenerating) return; 
+  
+  // Allow sending if there is text OR an image
+  if((!userMessage && !selectedImage) || isResponseGenerating) return; 
 
   isResponseGenerating = true;
 
-  const html = `<div class="message-content">
-                  <img class="avatar" src="user-avatar.png" alt="User avatar">
-                  <p class="text"></p>
-                </div>`;
+  // Build the HTML for the user's message
+  let messageHtml = '';
+  
+  if (selectedImage) {
+      // If image exists, show thumbnail + text
+      messageHtml = `<div class="message-content">
+                      <img class="avatar" src="user-avatar.png" alt="User avatar">
+                      <div class="text-wrapper">
+                        <img src="${imagePreview.src}" class="attachment-thumb">
+                        <p class="text"></p>
+                      </div>
+                    </div>`;
+  } else {
+      // Text only
+      messageHtml = `<div class="message-content">
+                      <img class="avatar" src="user-avatar.png" alt="User avatar">
+                      <p class="text"></p>
+                    </div>`;
+  }
 
-  const outgoingMessageDiv = createMessageElement(html, "outgoing");
+  const outgoingMessageDiv = createMessageElement(messageHtml, "outgoing");
   outgoingMessageDiv.querySelector(".text").innerText = userMessage;
   chatContainer.appendChild(outgoingMessageDiv);
   
@@ -213,23 +278,20 @@ const handleOutgoingChat = () => {
   setTimeout(showLoadingAnimation, 500); 
 }
 
-// Toggle between light and dark themes
 toggleThemeButton.addEventListener("click", () => {
   const isLightMode = document.body.classList.toggle("light_mode");
   localStorage.setItem("themeColor", isLightMode ? "light_mode" : "dark_mode");
   toggleThemeButton.innerText = isLightMode ? "dark_mode" : "light_mode";
 });
 
-// Delete all chats from local storage when button is clicked
 deleteChatButton.addEventListener("click", () => {
   if (confirm("Are you sure you want to delete all the chats?")) {
     localStorage.removeItem("saved-chats");
-    chatHistory = []; // Clear the API memory as well
+    chatHistory = []; 
     loadDataFromLocalstorage();
   }
 });
 
-// Set userMessage and handle outgoing chat when a suggestion is clicked
 suggestions.forEach(suggestion => {
   suggestion.addEventListener("click", () => {
     userMessage = suggestion.querySelector(".text").innerText;
@@ -237,15 +299,12 @@ suggestions.forEach(suggestion => {
   });
 });
 
-// Prevent default form submission and handle outgoing chat
 typingForm.addEventListener("submit", (e) => {
   e.preventDefault(); 
   handleOutgoingChat();
 });
 
-// Add click event for voice input button
 voiceInputButton.addEventListener("click", toggleVoiceRecognition);
 
-// Initialize speech recognition and load data
 initSpeechRecognition();
 loadDataFromLocalstorage();
