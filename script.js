@@ -23,7 +23,7 @@ let selectedImage = null; // Stores { mime_type, data }
 
 // API configuration
 const API_KEY = CONFIG.API_KEY; // <-- PASTE YOUR API KEY HERE
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${API_KEY}`;
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`;
 
 // --- NEW: IMAGE HANDLING FUNCTIONS ---
 
