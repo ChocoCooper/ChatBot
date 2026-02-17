@@ -76,12 +76,9 @@ function initializeSession(user) {
     authContainer.classList.add("hide");
     appContainer.classList.remove("hide");
     userGreeting.innerText = user.username; 
-    
-    // Initialize the Chat App Logic only after login
     initChatApp();
 }
 
-// Check on page load if user is already logged in
 window.addEventListener("DOMContentLoaded", () => {
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (currentUser) {
@@ -121,14 +118,12 @@ function initChatApp() {
     const API_KEY = CONFIG.API_KEY; 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-    // --- NEW: SCROLL HELPER FUNCTION ---
-    // Smooth scroll for messages
-    const scrollToBottomSmooth = () => {
-        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
-    }
-    // Instant scroll for typing (prevents lag)
-    const scrollToBottomInstant = () => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+    // --- FIX: ROBUST SCROLL FUNCTION ---
+    const scrollToBottom = () => {
+        // Use requestAnimationFrame to ensure DOM is updated before scrolling
+        requestAnimationFrame(() => {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        });
     }
 
     // --- IMAGE HANDLING ---
@@ -210,7 +205,7 @@ function initChatApp() {
         chatContainer.innerHTML = savedChats || '';
         document.body.classList.toggle("hide-header", savedChats);
         
-        scrollToBottomInstant(); // Scroll to bottom on load
+        scrollToBottom(); // Scroll on load
     };
 
     const createMessageElement = (content, ...classes) => {
@@ -220,7 +215,6 @@ function initChatApp() {
         return div;
     };
 
-    // --- UPDATED TYPING EFFECT ---
     const showTypingEffect = (text, textElement, incomingMessageDiv) => {
         const words = text.split(' ');
         let currentWordIndex = 0;
@@ -228,8 +222,8 @@ function initChatApp() {
         const typingInterval = setInterval(() => {
             textElement.innerText += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex++];
             
-            // FIX: Use Instant Scroll here to prevent lag
-            scrollToBottomInstant(); 
+            // FIX: Force scroll on every new word
+            scrollToBottom();
 
             if (currentWordIndex === words.length) {
                 clearInterval(typingInterval);
@@ -293,7 +287,7 @@ function initChatApp() {
         const incomingMessageDiv = createMessageElement(html, "incoming", "loading");
         chatContainer.appendChild(incomingMessageDiv);
         
-        scrollToBottomSmooth(); // Smooth scroll when loading starts
+        scrollToBottom(); // Scroll when loading bubbles appear
         
         generateAPIResponse(incomingMessageDiv);
     };
@@ -333,7 +327,7 @@ function initChatApp() {
         imagePreviewContainer.classList.add("hide");
         document.body.classList.add("hide-header");
         
-        scrollToBottomSmooth(); // Smooth scroll when user sends message
+        scrollToBottom(); // Scroll when user sends message
         
         setTimeout(showLoadingAnimation, 500); 
     };
