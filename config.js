@@ -1,4 +1,4 @@
 // config.js
 const CONFIG = {
-    API_KEY: "AIzaSyBSERU_7t3yr74wvLvvoH5GIL7-ERNR1sw"
+    API_KEY: "AIzaSyCExB2UpUqbupaIx8f8tdkxr1DTtOaxAiA"
 };
