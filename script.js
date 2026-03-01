@@ -1,5 +1,5 @@
 /* =========================================
-   SUPABASE AUTHENTICATION LOGIC
+   MOCK AUTHENTICATION LOGIC
    ========================================= */
 const authContainer = document.getElementById("auth-container");
 const appContainer = document.getElementById("app-container");
@@ -13,66 +13,28 @@ const userGreeting = document.getElementById("user-greeting");
 const loginError = document.getElementById("login-error");
 const regError = document.getElementById("reg-error");
 
-let supabase = null;
 let isChatInitialized = false;
-let supabaseLoading = false;
 
-// Function to initialize Supabase directly (without dynamic loading)
-const initSupabase = () => {
-    // Check if Supabase is already available globally
-    if (window.supabase) {
+// Mock user database (in memory only)
+let mockUsers = [
+    {
+        username: "demo",
+        email: "demo@example.com",
+        password: "password123"
+    }
+];
+
+// Check for existing session on load
+const checkMockSession = () => {
+    const savedUser = localStorage.getItem("mockUser");
+    if (savedUser) {
         try {
-            const { createClient } = window.supabase;
-            supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-            console.log("Supabase initialized successfully");
-            checkSession();
-            return true;
-        } catch (err) {
-            console.error("Supabase initialization failed:", err);
-            loginError.innerText = "System error. Please refresh the page.";
-            return false;
+            const user = JSON.parse(savedUser);
+            initializeSession(user);
+        } catch (e) {
+            localStorage.removeItem("mockUser");
         }
-    }
-    return false;
-};
-
-// Try to initialize Supabase immediately
-if (!initSupabase()) {
-    // If not available, load it dynamically
-    supabaseLoading = true;
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
-    script.onload = () => {
-        supabaseLoading = false;
-        initSupabase();
-    };
-    script.onerror = () => {
-        supabaseLoading = false;
-        console.error("Failed to load Supabase script.");
-        loginError.innerText = "Connection error. Failed to load system.";
-        regError.innerText = "Connection error. Failed to load system.";
-    };
-    document.head.appendChild(script);
-}
-
-const checkSession = async () => {
-    if (!supabase) {
-        console.log("Supabase not initialized yet");
-        return;
-    }
-    
-    try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
-        if (data && data.session) {
-            initializeSession(data.session.user);
-        } else {
-            authContainer.classList.remove("hide");
-            appContainer.classList.add("hide");
-        }
-    } catch (error) {
-        console.error("Error checking session:", error);
+    } else {
         authContainer.classList.remove("hide");
         appContainer.classList.add("hide");
     }
@@ -95,45 +57,49 @@ showLoginBtn.addEventListener("click", () => {
 registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     
-    if (supabaseLoading) {
-        regError.innerText = "System initializing, please wait...";
-        return;
-    }
-    
-    if (!supabase) {
-        regError.innerText = "System not initialized. Please refresh the page.";
-        return;
-    }
-    
     const username = document.getElementById("reg-username").value.trim();
     const email = document.getElementById("reg-email").value.trim();
     const password = document.getElementById("reg-password").value.trim();
     const repeatPassword = document.getElementById("reg-repeat-password").value.trim();
+
+    // Validation
+    if (!username || !email || !password) {
+        regError.innerText = "All fields are required.";
+        return;
+    }
 
     if (password !== repeatPassword) {
         regError.innerText = "Passwords do not match.";
         return;
     }
 
-    if (email && password && username) {
-        try {
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: { username: username }
-                }
-            });
-            if (error) throw error;
-            alert("Registration Successful! Please login.");
-            showLoginBtn.click();
-        } catch (error) {
-            regError.innerText = error.message;
-        }
+    if (password.length < 6) {
+        regError.innerText = "Password must be at least 6 characters.";
+        return;
     }
+
+    // Check if user already exists
+    const existingUser = mockUsers.find(u => u.email === email || u.username === username);
+    if (existingUser) {
+        regError.innerText = "User with this email or username already exists.";
+        return;
+    }
+
+    // Create new user
+    const newUser = {
+        username,
+        email,
+        password
+    };
+    
+    mockUsers.push(newUser);
+    
+    alert("Registration Successful! Please login.");
+    registerForm.reset();
+    showLoginBtn.click();
 });
 
-// Warn user when repeat password doesn't match while stop typing
+// Warn user when repeat password doesn't match while typing
 let passwordTimeout;
 const handlePasswordMatch = () => {
     clearTimeout(passwordTimeout);
@@ -152,49 +118,59 @@ document.getElementById("reg-repeat-password").addEventListener("input", handleP
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     
-    if (supabaseLoading) {
-        loginError.innerText = "System initializing, please wait...";
-        return;
-    }
-    
-    if (!supabase) {
-        loginError.innerText = "System not initialized. Please refresh the page.";
-        return;
-    }
-    
-    const email = document.getElementById("login-username").value.trim();
+    const emailOrUsername = document.getElementById("login-username").value.trim();
     const password = document.getElementById("login-password").value.trim();
 
-    try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-        if (error) throw error;
-        initializeSession(data.user);
-    } catch (error) {
-        loginError.innerText = "Invalid email or password";
+    if (!emailOrUsername || !password) {
+        loginError.innerText = "Please enter both email/username and password.";
+        return;
+    }
+
+    // Find user by email or username
+    const user = mockUsers.find(u => 
+        (u.email === emailOrUsername || u.username === emailOrUsername) && 
+        u.password === password
+    );
+
+    if (user) {
+        // Create a safe user object (without password)
+        const safeUser = {
+            email: user.email,
+            username: user.username,
+            user_metadata: {
+                username: user.username
+            }
+        };
+        
+        // Save session
+        localStorage.setItem("mockUser", JSON.stringify(safeUser));
+        initializeSession(safeUser);
+    } else {
+        loginError.innerText = "Invalid email/username or password";
     }
 });
 
 // Handle Logout
 logoutBtn.addEventListener("click", async () => {
-    if (!supabase) return;
     if(confirm("Are you sure you want to logout?")) {
-        await supabase.auth.signOut();
-        location.reload(); 
+        localStorage.removeItem("mockUser");
+        location.reload();
     }
 });
 
 function initializeSession(user) {
     authContainer.classList.add("hide");
     appContainer.classList.remove("hide");
-    userGreeting.innerText = user.user_metadata?.username || user.email.split('@')[0]; 
+    userGreeting.innerText = user.user_metadata?.username || user.username || user.email.split('@')[0];
+    
     if (!isChatInitialized) {
         initChatApp();
         isChatInitialized = true;
     }
 }
+
+// Check for existing session on page load
+checkMockSession();
 
 /* =========================================
    CORE CHATBOT LOGIC
@@ -222,7 +198,7 @@ function initChatApp() {
     let selectedImage = null; 
 
     const API_KEY = CONFIG.API_KEY; 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
     const YOUTUBE_API_KEY = CONFIG.YOUTUBE_API_KEY;
 
     // Scroll to bottom function
@@ -516,3 +492,38 @@ function initChatApp() {
     initSpeechRecognition();
     loadDataFromLocalstorage();
 }
+
+// Add CSS for loading animation if not present
+const style = document.createElement('style');
+style.textContent = `
+    .loading-indicator {
+        display: flex;
+        gap: 5px;
+        padding: 10px 0;
+    }
+    .loading-bar {
+        width: 8px;
+        height: 8px;
+        background: var(--primary-accent);
+        border-radius: 50%;
+        animation: bounce 1.5s infinite;
+    }
+    .loading-bar:nth-child(2) { animation-delay: 0.2s; }
+    .loading-bar:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-10px); }
+    }
+    .message.outgoing .text-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+    .attachment-thumb {
+        max-width: 200px;
+        max-height: 200px;
+        border-radius: 8px;
+    }
+`;
+document.head.appendChild(style);
