@@ -511,3 +511,41 @@ body {
   overflow: hidden;
   line-height: 1.4;
 }
+
+/* Additional styles for image attachments */
+.message.outgoing .text-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.attachment-thumb {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+}
+
+/* Loading indicator */
+.loading-indicator {
+    display: flex;
+    gap: 5px;
+    padding: 10px 0;
+}
+
+.loading-bar {
+    width: 8px;
+    height: 8px;
+    background: var(--primary-accent);
+    border-radius: 50%;
+    animation: bounce 1.5s infinite;
+}
+
+.loading-bar:nth-child(2) { animation-delay: 0.2s; }
+.loading-bar:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-10px); }
+}
