@@ -1,5 +1,5 @@
 /* =========================================
-   MOCK AUTHENTICATION LOGIC
+   SUPABASE AUTHENTICATION LOGIC
    ========================================= */
 const authContainer = document.getElementById("auth-container");
 const appContainer = document.getElementById("app-container");
@@ -12,6 +12,71 @@ const userGreeting = document.getElementById("user-greeting");
 
 const loginError = document.getElementById("login-error");
 const regError = document.getElementById("reg-error");
+
+let supabase = null;
+let isChatInitialized = false;
+let supabaseLoading = false;
+
+// Function to initialize Supabase directly (without dynamic loading)
+const initSupabase = () => {
+    // Check if Supabase is already available globally
+    if (window.supabase) {
+        try {
+            const { createClient } = window.supabase;
+            supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+            console.log("Supabase initialized successfully");
+            checkSession();
+            return true;
+        } catch (err) {
+            console.error("Supabase initialization failed:", err);
+            loginError.innerText = "System error. Please refresh the page.";
+            return false;
+        }
+    }
+    return false;
+};
+
+// Try to initialize Supabase immediately
+if (!initSupabase()) {
+    // If not available, load it dynamically
+    supabaseLoading = true;
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+    script.onload = () => {
+        supabaseLoading = false;
+        initSupabase();
+    };
+    script.onerror = () => {
+        supabaseLoading = false;
+        console.error("Failed to load Supabase script.");
+        loginError.innerText = "Connection error. Failed to load system.";
+        regError.innerText = "Connection error. Failed to load system.";
+    };
+    document.head.appendChild(script);
+}
+
+const checkSession = async () => {
+    if (!supabase) {
+        console.log("Supabase not initialized yet");
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (data && data.session) {
+            initializeSession(data.session.user);
+        } else {
+            authContainer.classList.remove("hide");
+            appContainer.classList.add("hide");
+        }
+    } catch (error) {
+        console.error("Error checking session:", error);
+        authContainer.classList.remove("hide");
+        appContainer.classList.add("hide");
+    }
+};
 
 // Toggle between Login and Register forms
 showRegisterBtn.addEventListener("click", () => {
@@ -26,48 +91,97 @@ showLoginBtn.addEventListener("click", () => {
     regError.innerText = "";
 });
 
-// Handle Registration
-registerForm.addEventListener("submit", (e) => {
+// Handle Registration (Sign Up)
+registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    
+    if (supabaseLoading) {
+        regError.innerText = "System initializing, please wait...";
+        return;
+    }
+    
+    if (!supabase) {
+        regError.innerText = "System not initialized. Please refresh the page.";
+        return;
+    }
+    
     const username = document.getElementById("reg-username").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
     const password = document.getElementById("reg-password").value.trim();
+    const repeatPassword = document.getElementById("reg-repeat-password").value.trim();
 
-    if (username && password) {
-        const users = JSON.parse(localStorage.getItem("mockUsers")) || [];
-        if (users.find(u => u.username === username)) {
-            regError.innerText = "Username already exists!";
-            return;
+    if (password !== repeatPassword) {
+        regError.innerText = "Passwords do not match.";
+        return;
+    }
+
+    if (email && password && username) {
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: { username: username }
+                }
+            });
+            if (error) throw error;
+            alert("Registration Successful! Please login.");
+            showLoginBtn.click();
+        } catch (error) {
+            regError.innerText = error.message;
         }
-
-        users.push({ username, password });
-        localStorage.setItem("mockUsers", JSON.stringify(users));
-        
-        alert("Registration Successful! Please login.");
-        showLoginBtn.click(); 
     }
 });
 
-// Handle Login
-loginForm.addEventListener("submit", (e) => {
+// Warn user when repeat password doesn't match while stop typing
+let passwordTimeout;
+const handlePasswordMatch = () => {
+    clearTimeout(passwordTimeout);
+    passwordTimeout = setTimeout(() => {
+        const password = document.getElementById("reg-password").value.trim();
+        const repeatPassword = document.getElementById("reg-repeat-password").value.trim();
+        
+        regError.innerText = (password && repeatPassword && password !== repeatPassword) ? "Passwords do not match." : "";
+    }, 1000);
+};
+
+document.getElementById("reg-password").addEventListener("input", handlePasswordMatch);
+document.getElementById("reg-repeat-password").addEventListener("input", handlePasswordMatch);
+
+// Handle Login (Sign In)
+loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const username = document.getElementById("login-username").value.trim();
+    
+    if (supabaseLoading) {
+        loginError.innerText = "System initializing, please wait...";
+        return;
+    }
+    
+    if (!supabase) {
+        loginError.innerText = "System not initialized. Please refresh the page.";
+        return;
+    }
+    
+    const email = document.getElementById("login-username").value.trim();
     const password = document.getElementById("login-password").value.trim();
 
-    const users = JSON.parse(localStorage.getItem("mockUsers")) || [];
-    const user = users.find(u => u.username === username && u.password === password);
-
-    if (user) {
-        localStorage.setItem("currentUser", JSON.stringify(user));
-        initializeSession(user);
-    } else {
-        loginError.innerText = "Invalid username or password";
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+        if (error) throw error;
+        initializeSession(data.user);
+    } catch (error) {
+        loginError.innerText = "Invalid email or password";
     }
 });
 
 // Handle Logout
-logoutBtn.addEventListener("click", () => {
+logoutBtn.addEventListener("click", async () => {
+    if (!supabase) return;
     if(confirm("Are you sure you want to logout?")) {
-        localStorage.removeItem("currentUser");
+        await supabase.auth.signOut();
         location.reload(); 
     }
 });
@@ -75,19 +189,12 @@ logoutBtn.addEventListener("click", () => {
 function initializeSession(user) {
     authContainer.classList.add("hide");
     appContainer.classList.remove("hide");
-    userGreeting.innerText = user.username; 
-    initChatApp();
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (currentUser) {
-        initializeSession(currentUser);
-    } else {
-        authContainer.classList.remove("hide");
-        appContainer.classList.add("hide");
+    userGreeting.innerText = user.user_metadata?.username || user.email.split('@')[0]; 
+    if (!isChatInitialized) {
+        initChatApp();
+        isChatInitialized = true;
     }
-});
+}
 
 /* =========================================
    CORE CHATBOT LOGIC
@@ -116,8 +223,9 @@ function initChatApp() {
 
     const API_KEY = CONFIG.API_KEY; 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    const YOUTUBE_API_KEY = CONFIG.YOUTUBE_API_KEY;
 
-    // --- FIX: SCROLL WINDOW FUNCTION ---
+    // Scroll to bottom function
     const scrollToBottom = () => {
         window.scrollTo({
             top: document.body.scrollHeight,
@@ -204,7 +312,7 @@ function initChatApp() {
         chatContainer.innerHTML = savedChats || '';
         document.body.classList.toggle("hide-header", savedChats);
         
-        scrollToBottom(); 
+        scrollToBottom();
     };
 
     const createMessageElement = (content, ...classes) => {
@@ -214,7 +322,7 @@ function initChatApp() {
         return div;
     };
 
-    const showTypingEffect = (text, textElement, incomingMessageDiv) => {
+    const showTypingEffect = (text, textElement, incomingMessageDiv, onComplete) => {
         const words = text.split(' ');
         let currentWordIndex = 0;
         
@@ -228,44 +336,46 @@ function initChatApp() {
                 isResponseGenerating = false;
                 incomingMessageDiv.querySelector(".icon").classList.remove("hide");
                 localStorage.setItem("saved-chats", chatContainer.innerHTML); 
+                if (onComplete) onComplete();
             }
         }, 75);
     };
 
-    // --- YOUTUBE API INTERACTION ---
-    const fetchYouTubeVideos = async (query, incomingMessageDiv) => {
-        const YOUTUBE_KEY = CONFIG.YOUTUBE_API_KEY;
-        const safeQuery = encodeURIComponent(query + " (Mayo Clinic OR WHO OR Osmosis)");
-        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${safeQuery}&type=video&maxResults=3&key=${YOUTUBE_KEY}`;
+    // --- YOUTUBE RECOMMENDATION LOGIC ---
+    const fetchYouTubeVideos = async (query) => {
+        if (!query || query.length < 3) return;
+        
+        const skipWords = ["hi", "hello", "hey", "greetings", "thanks", "thank you"];
+        if (skipWords.includes(query.toLowerCase().trim())) return;
 
         try {
-            const res = await fetch(url);
-            const data = await res.json();
+            const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=2&q=${encodeURIComponent(query + " health condition")}&type=video&key=${YOUTUBE_API_KEY}`;
+            
+            const response = await fetch(searchUrl);
+            const data = await response.json();
 
             if (data.items && data.items.length > 0) {
-                const videoContainer = document.createElement("div");
-                videoContainer.classList.add("video-recommendations");
-
-                data.items.forEach(item => {
-                    const videoCard = document.createElement("a");
-                    videoCard.href = `https://www.youtube.com/watch?v=${item.id.videoId}`;
-                    videoCard.target = "_blank"; 
-                    videoCard.classList.add("video-card");
-
-                    videoCard.innerHTML = `
-                        <img src="${item.snippet.thumbnails.medium.url}" class="video-thumb" alt="thumbnail">
-                        <div class="video-title" title="${item.snippet.title}">${item.snippet.title}</div>
-                    `;
-                    videoContainer.appendChild(videoCard);
-                });
-
-                incomingMessageDiv.appendChild(videoContainer);
-                scrollToBottom();
+                let videoHtml = `<div class="video-label">Recommended Videos:</div><div class="video-list">`;
                 
-                localStorage.setItem("saved-chats", chatContainer.innerHTML); 
+                data.items.forEach(item => {
+                    const title = item.snippet.title;
+                    const thumb = item.snippet.thumbnails.medium.url;
+                    const videoId = item.id.videoId;
+                    
+                    videoHtml += `<a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="video-card">
+                                    <img src="${thumb}" alt="${title}">
+                                    <div class="video-info"><p>${title}</p></div>
+                                  </a>`;
+                });
+                videoHtml += `</div>`;
+
+                const videoDiv = createMessageElement(videoHtml, "incoming", "video-message");
+                chatContainer.appendChild(videoDiv);
+                scrollToBottom();
+                localStorage.setItem("saved-chats", chatContainer.innerHTML);
             }
         } catch (error) {
-            console.error("YouTube API Error:", error);
+            console.error("Error fetching YouTube videos:", error);
         }
     };
 
@@ -286,7 +396,7 @@ function initChatApp() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     system_instruction: {
-                        parts: [{ text: "You are Health Assist AI. Provide helpful medical info. If the user discusses a disease or disorder, at the VERY END of your response, on a new line, add exactly: [YT_SEARCH: Disease Name]. If no specific disease is discussed, omit this tag." }]
+                        parts: [{ text: "You are Health Assist. Provide concise, crisp, and to-the-point medical information. Avoid long paragraphs. Use bullet points where possible. Do not be verbose." }]
                     },
                     contents: historyForAPI 
                 }),
@@ -297,31 +407,17 @@ function initChatApp() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error.message || "Error!");
 
-            let apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
+            const apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
             
-            // Extract the YouTube tag
-            let ytQuery = null;
-            const ytMatch = apiResponse.match(/\[YT_SEARCH:\s*(.*?)\]/);
-            if (ytMatch) {
-                ytQuery = ytMatch[1];
-                apiResponse = apiResponse.replace(ytMatch[0], '').trim();
-            }
-
             chatHistory.push({ role: "user", parts: [{ text: userMessage || "[Image]" }] });
             chatHistory.push({ role: "model", parts: [{ text: apiResponse }] });
 
             selectedImage = null;
             fileInput.value = "";
             
-            showTypingEffect(apiResponse, textElement, incomingMessageDiv); 
-
-            // Trigger YouTube fetch
-            if (ytQuery) {
-                setTimeout(() => {
-                    fetchYouTubeVideos(ytQuery, incomingMessageDiv);
-                }, 1000); 
-            }
-
+            showTypingEffect(apiResponse, textElement, incomingMessageDiv, () => {
+                fetchYouTubeVideos(userMessage);
+            }); 
         } catch (error) { 
             isResponseGenerating = false;
             textElement.innerText = error.message;
@@ -333,7 +429,7 @@ function initChatApp() {
 
     const showLoadingAnimation = () => {
         const html = `<div class="message-content">
-                        <img class="avatar" src="gemini-avatar.png" alt="AI" onerror="this.style.display='none'">
+                        <img class="avatar" src="gemini-avatar.png" alt="AI">
                         <p class="text"></p>
                         <div class="loading-indicator">
                             <div class="loading-bar"></div><div class="loading-bar"></div><div class="loading-bar"></div>
@@ -343,7 +439,8 @@ function initChatApp() {
         const incomingMessageDiv = createMessageElement(html, "incoming", "loading");
         chatContainer.appendChild(incomingMessageDiv);
         
-        scrollToBottom(); 
+        scrollToBottom();
+        
         generateAPIResponse(incomingMessageDiv);
     };
 
@@ -382,7 +479,8 @@ function initChatApp() {
         imagePreviewContainer.classList.add("hide");
         document.body.classList.add("hide-header");
         
-        scrollToBottom(); 
+        scrollToBottom();
+        
         setTimeout(showLoadingAnimation, 500); 
     };
 
