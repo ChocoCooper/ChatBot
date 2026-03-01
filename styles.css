@@ -453,3 +453,47 @@ body {
   .typing-area { bottom: 10px; }
   .auth-box { padding: 1.5rem; }
 }
+
+/* --- YOUTUBE RECOMMENDATIONS --- */
+.video-recommendations {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  margin-left: 54px; /* Aligns perfectly with the text bubble */
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+.video-card {
+  min-width: 200px;
+  max-width: 200px;
+  background: var(--container-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.video-card:hover {
+  border-color: #ef4444; /* YouTube Red accent */
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.video-thumb {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+}
+
+.video-title {
+  font-size: 0.85rem;
+  color: var(--text-color);
+  padding: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
