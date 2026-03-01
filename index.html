@@ -19,7 +19,7 @@
       <form id="login-form" class="auth-form">
         <h2>Welcome Back</h2>
         <div class="input-group">
-          <input type="text" id="login-username" placeholder="Username" required>
+          <input type="text" id="login-username" placeholder="Username or Email" required>
           <span class="material-symbols-rounded">person</span>
         </div>
         <div class="input-group">
@@ -34,11 +34,19 @@
       <form id="register-form" class="auth-form hide">
         <h2>Create Account</h2>
         <div class="input-group">
-          <input type="text" id="reg-username" placeholder="Choose Username" required>
+          <input type="text" id="reg-username" placeholder="Username" required>
           <span class="material-symbols-rounded">person</span>
         </div>
         <div class="input-group">
+          <input type="email" id="reg-email" placeholder="Email Address" required>
+          <span class="material-symbols-rounded">mail</span>
+        </div>
+        <div class="input-group">
           <input type="password" id="reg-password" placeholder="Choose Password" required>
+          <span class="material-symbols-rounded">lock</span>
+        </div>
+        <div class="input-group">
+          <input type="password" id="reg-repeat-password" placeholder="Repeat Password" required>
           <span class="material-symbols-rounded">lock</span>
         </div>
         <button type="submit" class="auth-btn">Sign Up</button>
@@ -103,7 +111,7 @@
       </div>
 
       <p class="disclaimer-text">
-        This HealthAssist ChatBot is only for to assist. Always consult a doctor for medical advice.
+        Gemini may display inaccurate info. Always consult a doctor for medical advice.
       </p>
     </div>
   </div>
