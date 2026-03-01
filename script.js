@@ -89,7 +89,6 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-
 /* =========================================
    CORE CHATBOT LOGIC
    ========================================= */
@@ -119,7 +118,6 @@ function initChatApp() {
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
     // --- FIX: SCROLL WINDOW FUNCTION ---
-    // This now scrolls the main window instead of the container
     const scrollToBottom = () => {
         window.scrollTo({
             top: document.body.scrollHeight,
@@ -206,7 +204,7 @@ function initChatApp() {
         chatContainer.innerHTML = savedChats || '';
         document.body.classList.toggle("hide-header", savedChats);
         
-        scrollToBottom(); // Scroll on load
+        scrollToBottom(); 
     };
 
     const createMessageElement = (content, ...classes) => {
@@ -223,7 +221,6 @@ function initChatApp() {
         const typingInterval = setInterval(() => {
             textElement.innerText += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex++];
             
-            // FIX: Scroll window on every new word
             scrollToBottom();
 
             if (currentWordIndex === words.length) {
@@ -233,6 +230,43 @@ function initChatApp() {
                 localStorage.setItem("saved-chats", chatContainer.innerHTML); 
             }
         }, 75);
+    };
+
+    // --- YOUTUBE API INTERACTION ---
+    const fetchYouTubeVideos = async (query, incomingMessageDiv) => {
+        const YOUTUBE_KEY = CONFIG.YOUTUBE_API_KEY;
+        const safeQuery = encodeURIComponent(query + " (Mayo Clinic OR WHO OR Osmosis)");
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${safeQuery}&type=video&maxResults=3&key=${YOUTUBE_KEY}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.items && data.items.length > 0) {
+                const videoContainer = document.createElement("div");
+                videoContainer.classList.add("video-recommendations");
+
+                data.items.forEach(item => {
+                    const videoCard = document.createElement("a");
+                    videoCard.href = `https://www.youtube.com/watch?v=${item.id.videoId}`;
+                    videoCard.target = "_blank"; 
+                    videoCard.classList.add("video-card");
+
+                    videoCard.innerHTML = `
+                        <img src="${item.snippet.thumbnails.medium.url}" class="video-thumb" alt="thumbnail">
+                        <div class="video-title" title="${item.snippet.title}">${item.snippet.title}</div>
+                    `;
+                    videoContainer.appendChild(videoCard);
+                });
+
+                incomingMessageDiv.appendChild(videoContainer);
+                scrollToBottom();
+                
+                localStorage.setItem("saved-chats", chatContainer.innerHTML); 
+            }
+        } catch (error) {
+            console.error("YouTube API Error:", error);
+        }
     };
 
     // --- API INTERACTION ---
@@ -250,7 +284,12 @@ function initChatApp() {
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: historyForAPI }),
+                body: JSON.stringify({ 
+                    system_instruction: {
+                        parts: [{ text: "You are Health Assist AI. Provide helpful medical info. If the user discusses a disease or disorder, at the VERY END of your response, on a new line, add exactly: [YT_SEARCH: Disease Name]. If no specific disease is discussed, omit this tag." }]
+                    },
+                    contents: historyForAPI 
+                }),
             });
 
             if (response.status === 429) throw new Error("⏳ Too fast! Wait 30s.");
@@ -258,8 +297,16 @@ function initChatApp() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error.message || "Error!");
 
-            const apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
+            let apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
             
+            // Extract the YouTube tag
+            let ytQuery = null;
+            const ytMatch = apiResponse.match(/\[YT_SEARCH:\s*(.*?)\]/);
+            if (ytMatch) {
+                ytQuery = ytMatch[1];
+                apiResponse = apiResponse.replace(ytMatch[0], '').trim();
+            }
+
             chatHistory.push({ role: "user", parts: [{ text: userMessage || "[Image]" }] });
             chatHistory.push({ role: "model", parts: [{ text: apiResponse }] });
 
@@ -267,6 +314,14 @@ function initChatApp() {
             fileInput.value = "";
             
             showTypingEffect(apiResponse, textElement, incomingMessageDiv); 
+
+            // Trigger YouTube fetch
+            if (ytQuery) {
+                setTimeout(() => {
+                    fetchYouTubeVideos(ytQuery, incomingMessageDiv);
+                }, 1000); 
+            }
+
         } catch (error) { 
             isResponseGenerating = false;
             textElement.innerText = error.message;
@@ -278,7 +333,7 @@ function initChatApp() {
 
     const showLoadingAnimation = () => {
         const html = `<div class="message-content">
-                        <img class="avatar" src="gemini-avatar.png" alt="AI">
+                        <img class="avatar" src="gemini-avatar.png" alt="AI" onerror="this.style.display='none'">
                         <p class="text"></p>
                         <div class="loading-indicator">
                             <div class="loading-bar"></div><div class="loading-bar"></div><div class="loading-bar"></div>
@@ -288,8 +343,7 @@ function initChatApp() {
         const incomingMessageDiv = createMessageElement(html, "incoming", "loading");
         chatContainer.appendChild(incomingMessageDiv);
         
-        scrollToBottom(); // Scroll when loading bubbles appear
-        
+        scrollToBottom(); 
         generateAPIResponse(incomingMessageDiv);
     };
 
@@ -328,8 +382,7 @@ function initChatApp() {
         imagePreviewContainer.classList.add("hide");
         document.body.classList.add("hide-header");
         
-        scrollToBottom(); // Scroll when user sends message
-        
+        scrollToBottom(); 
         setTimeout(showLoadingAnimation, 500); 
     };
 
