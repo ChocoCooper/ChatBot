@@ -162,7 +162,7 @@
                 map.flyTo([lat, lon], 14);
             }
 
-            const query = `[out:json][timeout:15];node"amenity"~"hospital|clinic";out;`;
+            const query = `[out:json][timeout:15];node["amenity"~"hospital|clinic"](around:${radius},${lat},${lon});out;`;
             const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
 
             try {
@@ -222,4 +222,5 @@
     </script>
     <script src="sidebar.js"></script>
 </body>
+
 </html>
