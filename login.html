@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Health Assist AI - Login</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="auth-container" class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <h1>Health Assist</h1>
+        <p>Your personal AI health companion</p>
+      </div>
+      
+      <form id="login-form" class="auth-form">
+        <h2>Welcome Back</h2>
+        <div class="input-group">
+          <input type="text" id="login-username" placeholder="Username" required>
+          <span class="material-symbols-rounded">person</span>
+        </div>
+        <div class="input-group">
+          <input type="password" id="login-password" placeholder="Password" required>
+          <span class="material-symbols-rounded">lock</span>
+        </div>
+        <button type="submit" class="auth-btn">Log In</button>
+        <p class="switch-text">Don't have an account? <span id="show-register">Sign Up</span></p>
+        <p id="login-error" class="error-msg"></p>
+      </form>
+
+      <form id="register-form" class="auth-form hide">
+        <h2>Create Account</h2>
+        <div class="input-group">
+          <input type="text" id="reg-username" placeholder="Choose Username" required>
+          <span class="material-symbols-rounded">person</span>
+        </div>
+        <div class="input-group">
+          <input type="password" id="reg-password" placeholder="Choose Password" required>
+          <span class="material-symbols-rounded">lock</span>
+        </div>
+        <button type="submit" class="auth-btn">Sign Up</button>
+        <p class="switch-text">Already have an account? <span id="show-login">Log In</span></p>
+        <p id="reg-error" class="error-msg"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+</body>
+</html>

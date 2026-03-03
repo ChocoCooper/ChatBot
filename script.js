@@ -1,176 +1,33 @@
 /* =========================================
-   MOCK AUTHENTICATION LOGIC
+   CHATBOT SESSION LOGIC
    ========================================= */
-const authContainer = document.getElementById("auth-container");
-const appContainer = document.getElementById("app-container");
-const loginForm = document.getElementById("login-form");
-const registerForm = document.getElementById("register-form");
-const showRegisterBtn = document.getElementById("show-register");
-const showLoginBtn = document.getElementById("show-login");
 const logoutBtn = document.getElementById("logout-button");
 const userGreeting = document.getElementById("user-greeting");
 
-const loginError = document.getElementById("login-error");
-const regError = document.getElementById("reg-error");
-
-let isChatInitialized = false;
-
-// Mock user database (in memory only)
-let mockUsers = [
-    {
-        username: "demo",
-        email: "demo@example.com",
-        password: "password123"
-    }
-];
-
-// Check for existing session on load
-const checkMockSession = () => {
-    const savedUser = localStorage.getItem("mockUser");
-    if (savedUser) {
-        try {
-            const user = JSON.parse(savedUser);
-            initializeSession(user);
-        } catch (e) {
-            localStorage.removeItem("mockUser");
-        }
-    } else {
-        authContainer.classList.remove("hide");
-        appContainer.classList.add("hide");
-    }
-};
-
-// Toggle between Login and Register forms
-showRegisterBtn.addEventListener("click", () => {
-    loginForm.classList.add("hide");
-    registerForm.classList.remove("hide");
-    loginError.innerText = "";
-});
-
-showLoginBtn.addEventListener("click", () => {
-    registerForm.classList.add("hide");
-    loginForm.classList.remove("hide");
-    regError.innerText = "";
-});
-
-// Handle Registration (Sign Up)
-registerForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById("reg-username").value.trim();
-    const email = document.getElementById("reg-email").value.trim();
-    const password = document.getElementById("reg-password").value.trim();
-    const repeatPassword = document.getElementById("reg-repeat-password").value.trim();
-
-    // Validation
-    if (!username || !email || !password) {
-        regError.innerText = "All fields are required.";
-        return;
-    }
-
-    if (password !== repeatPassword) {
-        regError.innerText = "Passwords do not match.";
-        return;
-    }
-
-    if (password.length < 6) {
-        regError.innerText = "Password must be at least 6 characters.";
-        return;
-    }
-
-    // Check if user already exists
-    const existingUser = mockUsers.find(u => u.email === email || u.username === username);
-    if (existingUser) {
-        regError.innerText = "User with this email or username already exists.";
-        return;
-    }
-
-    // Create new user
-    const newUser = {
-        username,
-        email,
-        password
-    };
-    
-    mockUsers.push(newUser);
-    
-    alert("Registration Successful! Please login.");
-    registerForm.reset();
-    showLoginBtn.click();
-});
-
-// Warn user when repeat password doesn't match while typing
-let passwordTimeout;
-const handlePasswordMatch = () => {
-    clearTimeout(passwordTimeout);
-    passwordTimeout = setTimeout(() => {
-        const password = document.getElementById("reg-password").value.trim();
-        const repeatPassword = document.getElementById("reg-repeat-password").value.trim();
-        
-        regError.innerText = (password && repeatPassword && password !== repeatPassword) ? "Passwords do not match." : "";
-    }, 1000);
-};
-
-document.getElementById("reg-password").addEventListener("input", handlePasswordMatch);
-document.getElementById("reg-repeat-password").addEventListener("input", handlePasswordMatch);
-
-// Handle Login (Sign In)
-loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const emailOrUsername = document.getElementById("login-username").value.trim();
-    const password = document.getElementById("login-password").value.trim();
-
-    if (!emailOrUsername || !password) {
-        loginError.innerText = "Please enter both email/username and password.";
-        return;
-    }
-
-    // Find user by email or username
-    const user = mockUsers.find(u => 
-        (u.email === emailOrUsername || u.username === emailOrUsername) && 
-        u.password === password
-    );
-
-    if (user) {
-        // Create a safe user object (without password)
-        const safeUser = {
-            email: user.email,
-            username: user.username,
-            user_metadata: {
-                username: user.username
-            }
-        };
-        
-        // Save session
-        localStorage.setItem("mockUser", JSON.stringify(safeUser));
-        initializeSession(safeUser);
-    } else {
-        loginError.innerText = "Invalid email/username or password";
-    }
-});
-
-// Handle Logout
-logoutBtn.addEventListener("click", async () => {
-    if(confirm("Are you sure you want to logout?")) {
-        localStorage.removeItem("mockUser");
-        location.reload();
-    }
-});
-
-function initializeSession(user) {
-    authContainer.classList.add("hide");
-    appContainer.classList.remove("hide");
-    userGreeting.innerText = user.user_metadata?.username || user.username || user.email.split('@')[0];
-    
-    if (!isChatInitialized) {
-        initChatApp();
-        isChatInitialized = true;
-    }
+// Check Session
+const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+if (!currentUser) {
+    window.location.href = "login.html";
+} else {
+    if (userGreeting) userGreeting.innerText = currentUser.username;
 }
 
-// Check for existing session on page load
-checkMockSession();
+// Handle Logout
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+        if(confirm("Are you sure you want to logout?")) {
+            localStorage.removeItem("currentUser");
+            window.location.href = "index.html"; 
+        }
+    });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    if (currentUser) {
+        initChatApp();
+    }
+});
+
 
 /* =========================================
    CORE CHATBOT LOGIC
@@ -189,19 +46,24 @@ function initChatApp() {
     const imagePreviewContainer = document.querySelector("#image-preview-container");
     const imagePreview = document.querySelector("#image-preview");
     const removeImageButton = document.querySelector("#remove-image-button");
+    const sendMessageButton = document.querySelector("#send-message-button");
 
     let userMessage = null;
     let isResponseGenerating = false;
+    let abortController = null;
+    let typingIntervalId = null;
     let isListening = false;
     let recognition = null;
     let chatHistory = [];
     let selectedImage = null; 
 
     const API_KEY = CONFIG.API_KEY; 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
     const YOUTUBE_API_KEY = CONFIG.YOUTUBE_API_KEY;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&key=${YOUTUBE_API_KEY}`;
 
-    // Scroll to bottom function
+    // --- FIX: SCROLL WINDOW FUNCTION ---
+    // This now scrolls the main window instead of the container
     const scrollToBottom = () => {
         window.scrollTo({
             top: document.body.scrollHeight,
@@ -288,7 +150,7 @@ function initChatApp() {
         chatContainer.innerHTML = savedChats || '';
         document.body.classList.toggle("hide-header", savedChats);
         
-        scrollToBottom();
+        scrollToBottom(); // Scroll on load
     };
 
     const createMessageElement = (content, ...classes) => {
@@ -298,66 +160,153 @@ function initChatApp() {
         return div;
     };
 
-    const showTypingEffect = (text, textElement, incomingMessageDiv, onComplete) => {
-        const words = text.split(' ');
+    const showTypingEffect = (text, textElement, incomingMessageDiv) => {
+        // 1. Use placeholders for icons
+        let processedText = text.replace(/\[CHECK\]/g, "___CHECK___")
+                                .replace(/\[WARNING\]/g, "___WARNING___");
+
+        // 2. Split by delimiters (icons and whitespace) to tokenize
+        const words = processedText.split(/(___CHECK___|___WARNING___|\s+)/).filter(w => w && w.length > 0);
+        
         let currentWordIndex = 0;
         
-        const typingInterval = setInterval(() => {
-            textElement.innerText += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex++];
-            
-            scrollToBottom();
-
-            if (currentWordIndex === words.length) {
-                clearInterval(typingInterval);
+        typingIntervalId = setInterval(() => {
+            if (currentWordIndex >= words.length) {
+                clearInterval(typingIntervalId);
                 isResponseGenerating = false;
+                sendMessageButton.innerText = "send";
                 incomingMessageDiv.querySelector(".icon").classList.remove("hide");
                 localStorage.setItem("saved-chats", chatContainer.innerHTML); 
-                if (onComplete) onComplete();
+                return;
             }
-        }, 75);
+
+            let word = words[currentWordIndex++];
+            
+            if (word === "___CHECK___") {
+                textElement.innerHTML += `<span class="material-symbols-rounded" style="color: var(--secondary-accent); vertical-align: -6px;">check_circle</span>`;
+            } else if (word === "___WARNING___") {
+                textElement.innerHTML += `<span class="material-symbols-rounded" style="color: #ef4444; vertical-align: -6px;">warning</span>`;
+            } else {
+                textElement.innerHTML += word.replace(/\n/g, "<br>");
+            }
+
+            // FIX: Scroll window on every new word
+            scrollToBottom();
+        }, 25);
     };
 
-    // --- YOUTUBE RECOMMENDATION LOGIC ---
+    // --- YOUTUBE INTEGRATION ---
     const fetchYouTubeVideos = async (query) => {
-        if (!query || query.length < 3) return;
-        
-        const skipWords = ["hi", "hello", "hey", "greetings", "thanks", "thank you"];
-        if (skipWords.includes(query.toLowerCase().trim())) return;
+        if (!query) return [];
+
+        // Filter out greetings and common conversational phrases to save API quota
+        const skipPatterns = /^(hi|hello|hey|greetings|good\s(morning|afternoon|evening)|thanks|thank\syou|ok|okay|bye|goodbye|who\sare\syou|what\sis\syour\sname)(\s(there|bot|healthassist))?[\.!]?$/i;
+        if (skipPatterns.test(query.trim())) {
+            return [];
+        }
+
+        const cacheKey = `yt_cache_${query.trim().toLowerCase()}`;
+        const cachedData = localStorage.getItem(cacheKey);
+
+        if (cachedData) {
+            try {
+                return JSON.parse(cachedData);
+            } catch (e) {
+                localStorage.removeItem(cacheKey);
+            }
+        }
 
         try {
-            const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=2&q=${encodeURIComponent(query + " health condition")}&type=video&key=${YOUTUBE_API_KEY}`;
-            
+            // Append 'medical health' to context to ensure relevant results
+            const searchUrl = `${YOUTUBE_API_URL}&q=${encodeURIComponent(query + " medical health")}`;
             const response = await fetch(searchUrl);
             const data = await response.json();
-
-            if (data.items && data.items.length > 0) {
-                let videoHtml = `<div class="video-label">Recommended Videos:</div><div class="video-list">`;
-                
-                data.items.forEach(item => {
-                    const title = item.snippet.title;
-                    const thumb = item.snippet.thumbnails.medium.url;
-                    const videoId = item.id.videoId;
-                    
-                    videoHtml += `<a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="video-card">
-                                    <img src="${thumb}" alt="${title}">
-                                    <div class="video-info"><p>${title}</p></div>
-                                  </a>`;
-                });
-                videoHtml += `</div>`;
-
-                const videoDiv = createMessageElement(videoHtml, "incoming", "video-message");
-                chatContainer.appendChild(videoDiv);
-                scrollToBottom();
-                localStorage.setItem("saved-chats", chatContainer.innerHTML);
+            
+            if (data.items) {
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify(data.items));
+                } catch (e) {
+                    console.warn("Could not cache YouTube results:", e);
+                }
             }
+            
+            return data.items || [];
         } catch (error) {
             console.error("Error fetching YouTube videos:", error);
+            return [];
         }
     };
 
+    const renderVideoRecommendations = (videos) => {
+        if (!videos || videos.length === 0) return null;
+
+        const container = document.createElement("div");
+        container.className = "video-recommendation-container";
+        
+        container.innerHTML = `
+            <p class="video-label">Recommended Videos:</p>
+            <div class="video-scroller"></div>
+        `;
+        
+        const scroller = container.querySelector(".video-scroller");
+
+        videos.forEach(video => {
+            const card = document.createElement("a");
+            card.className = "video-card";
+            card.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+            card.target = "_blank";
+            card.innerHTML = `
+                <img src="${video.snippet.thumbnails.medium.url}" class="video-thumb" alt="${video.snippet.title}">
+                <div class="video-info">
+                    <h4 class="video-title">${video.snippet.title}</h4>
+                    <p class="video-channel">${video.snippet.channelTitle}</p>
+                </div>
+            `;
+            scroller.appendChild(card);
+        });
+
+        return container;
+    };
+
     // --- API INTERACTION ---
+    const normalizeForCache = (text) => {
+        return text.toLowerCase()
+            .replace(/[^\w\s]/g, '') 
+            .replace(/\b(hi|hello|hey|greetings|please|help|tell|me|about|i|have|am|im|a|an|the|is|are|was|were|of|in|on|at|to|for|with|my|suffering|from)\b/g, '') 
+            .replace(/\s+/g, ' ') 
+            .trim();
+    };
+
     const generateAPIResponse = async (incomingMessageDiv) => {
         const textElement = incomingMessageDiv.querySelector(".text"); 
+        
+        // Check cache to save API quota
+        let cacheKey = null;
+        if (!selectedImage && userMessage) {
+            const normalized = normalizeForCache(userMessage);
+            if (normalized) {
+                cacheKey = `gemini_msg_${normalized}`;
+                const cachedResponse = localStorage.getItem(cacheKey);
+                if (cachedResponse) {
+                    chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+                    chatHistory.push({ role: "model", parts: [{ text: cachedResponse }] });
+                    showTypingEffect(cachedResponse, textElement, incomingMessageDiv);
+                    incomingMessageDiv.classList.remove("loading");
+                    
+                    if (userMessage) {
+                        fetchYouTubeVideos(userMessage).then(videos => {
+                            const videoContainer = renderVideoRecommendations(videos);
+                            if (videoContainer) {
+                                incomingMessageDiv.appendChild(videoContainer);
+                                scrollToBottom();
+                            }
+                        });
+                    }
+                    return;
+                }
+            }
+        }
+
         const userRequestParts = [{ text: userMessage }];
         if (selectedImage) userRequestParts.push(selectedImage);
 
@@ -366,15 +315,24 @@ function initChatApp() {
             { role: "user", parts: userRequestParts }
         ];
 
+        abortController = new AbortController();
+
         try {
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                signal: abortController.signal,
                 body: JSON.stringify({ 
+                    contents: historyForAPI,
                     system_instruction: {
-                        parts: [{ text: "You are Health Assist. Provide concise, crisp, and to-the-point medical information. Avoid long paragraphs. Use bullet points where possible. Do not be verbose." }]
-                    },
-                    contents: historyForAPI 
+                        parts: [{ text: `You are a clinical, highly concise Health Assist AI. 
+                        Follow these strict rules for every response:
+                        1. Be extremely crisp and direct. NO long introductory or concluding conversational filler.
+                        2. Keep your total response under 4 to 5 short sentences whenever possible.
+                        3. Use bullet points if listing symptoms, causes, or treatments.
+                        4. Use [CHECK] for proven remedies/medicines and [WARNING] for precautions/warnings.
+                        5. Be conversational (e.g., ask "How do you feel?") and only ask a follow-up question at the end if necessary.` }]
+                    }
                 }),
             });
 
@@ -383,7 +341,11 @@ function initChatApp() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error.message || "Error!");
 
-            const apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
+            let apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*/g, '');
+            
+            if (cacheKey) {
+                localStorage.setItem(cacheKey, apiResponse);
+            }
             
             chatHistory.push({ role: "user", parts: [{ text: userMessage || "[Image]" }] });
             chatHistory.push({ role: "model", parts: [{ text: apiResponse }] });
@@ -391,11 +353,25 @@ function initChatApp() {
             selectedImage = null;
             fileInput.value = "";
             
-            showTypingEffect(apiResponse, textElement, incomingMessageDiv, () => {
-                fetchYouTubeVideos(userMessage);
-            }); 
+            showTypingEffect(apiResponse, textElement, incomingMessageDiv); 
+
+            // Fetch and display YouTube videos based on user query
+            if (userMessage) {
+                fetchYouTubeVideos(userMessage).then(videos => {
+                    const videoContainer = renderVideoRecommendations(videos);
+                    if (videoContainer) {
+                        incomingMessageDiv.appendChild(videoContainer);
+                        scrollToBottom();
+                    }
+                });
+            }
         } catch (error) { 
+            if (error.name === 'AbortError') {
+                incomingMessageDiv.remove();
+                return;
+            }
             isResponseGenerating = false;
+            sendMessageButton.innerText = "send";
             textElement.innerText = error.message;
             textElement.parentElement.closest(".message").classList.add("error");
         } finally {
@@ -415,7 +391,7 @@ function initChatApp() {
         const incomingMessageDiv = createMessageElement(html, "incoming", "loading");
         chatContainer.appendChild(incomingMessageDiv);
         
-        scrollToBottom();
+        scrollToBottom(); // Scroll when loading bubbles appear
         
         generateAPIResponse(incomingMessageDiv);
     };
@@ -428,17 +404,26 @@ function initChatApp() {
     };
 
     const handleOutgoingChat = () => {
-        userMessage = typingForm.querySelector(".typing-input").value.trim() || userMessage;
-        if((!userMessage && !selectedImage) || isResponseGenerating) return; 
+        if (isResponseGenerating) {
+            if (abortController) abortController.abort();
+            if (typingIntervalId) clearInterval(typingIntervalId);
+            isResponseGenerating = false;
+            sendMessageButton.innerText = "send";
+            return;
+        }
+
+        userMessage = typingForm.querySelector(".typing-input").value.trim();
+        if(!userMessage && !selectedImage) return; 
 
         isResponseGenerating = true;
+        sendMessageButton.innerText = "stop_circle";
         let messageHtml = '';
         
         if (selectedImage) {
             messageHtml = `<div class="message-content">
                             <div class="text-wrapper">
                                 <img src="${imagePreview.src}" class="attachment-thumb">
-                                <p class="text"></p>
+                                <p class="text"${!userMessage ? ' style="display:none"' : ''}></p>
                             </div>
                            </div>`;
         } else {
@@ -455,7 +440,7 @@ function initChatApp() {
         imagePreviewContainer.classList.add("hide");
         document.body.classList.add("hide-header");
         
-        scrollToBottom();
+        scrollToBottom(); // Scroll when user sends message
         
         setTimeout(showLoadingAnimation, 500); 
     };
@@ -492,38 +477,3 @@ function initChatApp() {
     initSpeechRecognition();
     loadDataFromLocalstorage();
 }
-
-// Add CSS for loading animation if not present
-const style = document.createElement('style');
-style.textContent = `
-    .loading-indicator {
-        display: flex;
-        gap: 5px;
-        padding: 10px 0;
-    }
-    .loading-bar {
-        width: 8px;
-        height: 8px;
-        background: var(--primary-accent);
-        border-radius: 50%;
-        animation: bounce 1.5s infinite;
-    }
-    .loading-bar:nth-child(2) { animation-delay: 0.2s; }
-    .loading-bar:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
-        0%, 60%, 100% { transform: translateY(0); }
-        30% { transform: translateY(-10px); }
-    }
-    .message.outgoing .text-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 10px;
-    }
-    .attachment-thumb {
-        max-width: 200px;
-        max-height: 200px;
-        border-radius: 8px;
-    }
-`;
-document.head.appendChild(style);

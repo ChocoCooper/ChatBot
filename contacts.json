@@ -1,0 +1,182 @@
+[
+  {
+    "hospital": "Chennai National Hospital",
+    "specialties_available": ["Dermatology","ENT","Plastic Surgery","Endocrinology","General Medicine","Orthopaedics"],
+    "city": "Chennai",
+    "contact": "+91 8939033333"
+  },
+  {
+    "hospital": "Rajiv Gandhi Government General Hospital",
+    "specialties_available": ["Cardiology","Endocrinology","Dermatology","General Surgery","Diabetology","Neurology","Nephrology"],
+    "city": "Chennai",
+    "contact": "044 25305000"
+  },
+  {
+    "hospital": "Stanley Medical College Hospital",
+    "specialties_available": ["Cardiology","Dermatology","General Medicine","Surgery","ENT","Urology"],
+    "city": "Chennai",
+    "contact": "044 25281371"
+  },
+  {
+    "hospital": "Kilpauk Medical College Hospital",
+    "specialties_available": ["Endocrinology","Dermatology","Cardiology","Orthopaedics","General Surgery","Gastroenterology"],
+    "city": "Chennai",
+    "contact": "044 28364910"
+  },
+  {
+    "hospital": "Tamil Nadu Government Multi Super Specialty Hospital",
+    "specialties_available": ["Cardiology","Cardiothoracic Surgery","Endocrinology","Neurology","Vascular Surgery","Nephrology"],
+    "city": "Chennai",
+    "contact": "044 27027474"
+  },
+  {
+    "hospital": "Government Omandurar Medical College Hospital",
+    "specialties_available": ["General Medicine","Cardiology","Endocrinology","Neurology","Nephrology","General Surgery"],
+    "city": "Chennai",
+    "contact": "044 24343333"
+  },
+  {
+    "hospital": "Institute of Child Health and Hospital for Children",
+    "specialties_available": ["Paediatrics","Paediatric Cardiology","Neonatology","Paediatric Surgery"],
+    "city": "Chennai",
+    "contact": "044 28191121"
+  },
+  {
+    "hospital": "Egmore Women and Children Hospital",
+    "specialties_available": ["Obstetrics","Gynaecology","Neonatology","Fetal Medicine"],
+    "city": "Chennai",
+    "contact": "044 28191919"
+  },
+  {
+    "hospital": "Government Royapettah Hospital",
+    "specialties_available": ["General Medicine","Dermatology","Orthopaedics","General Surgery","ENT"],
+    "city": "Chennai",
+    "contact": "044 28483000"
+  },
+  {
+    "hospital": "ESI Hospital KK Nagar",
+    "specialties_available": ["General Medicine","Dermatology","Orthopaedics","ENT","General Surgery"],
+    "city": "Chennai",
+    "contact": "044 24892800"
+  },
+  {
+    "hospital": "Apollo Hospitals Greams Road",
+    "specialties_available": ["Cardiology","Dermatology","Endocrinology","Oncology","Neurology","Orthopaedics","Gastroenterology"],
+    "city": "Chennai",
+    "contact": "044 28293333"
+  },
+  {
+    "hospital": "MIOT International",
+    "specialties_available": ["Cardiology","Orthopaedics","Nephrology","Gastroenterology","Dermatology"],
+    "city": "Chennai",
+    "contact": "044 42002288"
+  },
+  {
+    "hospital": "Fortis Malar Hospital",
+    "specialties_available": ["Cardiology","Neurology","Nephrology","Endocrinology","General Surgery"],
+    "city": "Chennai",
+    "contact": "044 42892222"
+  },
+  {
+    "hospital": "Gleneagles Global Health City",
+    "specialties_available": ["Cardiology","Liver Transplant","Gastroenterology","Oncology","Nephrology","Endocrinology"],
+    "city": "Chennai",
+    "contact": "044 44777000"
+  },
+  {
+    "hospital": "Sri Ramachandra Medical Centre",
+    "specialties_available": ["Cardiology","Dermatology","Endocrinology","ENT","General Medicine","Oncology"],
+    "city": "Chennai",
+    "contact": "044 45928500"
+  },
+  {
+    "hospital": "Vijaya Hospital",
+    "specialties_available": ["Cardiology","Orthopaedics","Dermatology","General Medicine","Urology"],
+    "city": "Chennai",
+    "contact": "044 24801616"
+  },
+  {
+    "hospital": "Billroth Hospitals",
+    "specialties_available": ["Cardiology","General Surgery","Orthopaedics","Gastroenterology","Dermatology"],
+    "city": "Chennai",
+    "contact": "044 42921777"
+  },
+  {
+    "hospital": "SIMS Hospital",
+    "specialties_available": ["Cardiology","Nephrology","Endocrinology","Orthopaedics","Neurology"],
+    "city": "Chennai",
+    "contact": "044 40006000"
+  },
+  {
+    "hospital": "Kauvery Hospital Chennai",
+    "specialties_available": ["Cardiology","Diabetology","Endocrinology","Orthopaedics","Gastroenterology"],
+    "city": "Chennai",
+    "contact": "044 40006000"
+  },
+  {
+    "hospital": "Sundaram Medical Foundation",
+    "specialties_available": ["Cardiology","Diabetology","Nephrology","Gastroenterology","General Medicine"],
+    "city": "Chennai",
+    "contact": "044 26144100"
+  },
+  {
+    "hospital": "Adyar Cancer Institute",
+    "specialties_available": ["Oncology","Surgical Oncology","Radiation Oncology","Medical Oncology"],
+    "city": "Chennai",
+    "contact": "044 24911500"
+  },
+  {
+    "hospital": "Dr. Mehta’s Hospitals",
+    "specialties_available": ["Paediatrics","Neonatology","Paediatric Cardiology","Paediatric Neurology"],
+    "city": "Chennai",
+    "contact": "044 42271001"
+  },
+  {
+    "hospital": "Prashanth Hospitals",
+    "specialties_available": ["Gynaecology","Fertility","Endocrinology","General Medicine"],
+    "city": "Chennai",
+    "contact": "044 42277777"
+  },
+  {
+    "hospital": "VS Hospitals",
+    "specialties_available": ["Oncology","Surgical Oncology","Medical Oncology","Radiation Oncology"],
+    "city": "Chennai",
+    "contact": "044 42930000"
+  },
+  {
+    "hospital": "Chettinad Hospital and Research Institute",
+    "specialties_available": ["Cardiology","Endocrinology","Dermatology","Neurology","General Surgery"],
+    "city": "Chennai",
+    "contact": "044 47411000"
+  },
+  {
+    "hospital": "Saveetha Medical College Hospital",
+    "specialties_available": ["Cardiology","Endocrinology","Dermatology","Orthopaedics","General Medicine"],
+    "city": "Chennai",
+    "contact": "044 66726666"
+  },
+  {
+    "hospital": "Frontier Lifeline Hospital",
+    "specialties_available": ["Cardiology","Cardiothoracic Surgery","Vascular Surgery"],
+    "city": "Chennai",
+    "contact": "044 42017575"
+  },
+  {
+    "hospital": "Dr. Rela Institute & Medical Centre",
+    "specialties_available": ["Liver Transplant","Hepatology","Gastroenterology","Cardiology"],
+    "city": "Chennai",
+    "contact": "044 66667777"
+  },
+  {
+    "hospital": "Parvathy Hospital",
+    "specialties_available": ["Orthopaedics","Spine Surgery","Joint Replacement"],
+    "city": "Chennai",
+    "contact": "044 43903333"
+  },
+  {
+    "hospital": "MGM Healthcare",
+    "specialties_available": ["Cardiology","Oncology","Orthopaedics","Neurology","Nephrology"],
+    "city": "Chennai",
+    "contact": "044 45242424"
+  }
+]
