@@ -4,34 +4,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     const menuItems = document.querySelectorAll('.menu-item');
 
-    // Toggle Sidebar
     if (toggleBtn && sidebar) {
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-        });
-        
-        // Close sidebar when clicking outside on mobile
+        toggleBtn.addEventListener('click', () => sidebar.classList.toggle('active'));
         document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768 && 
-                sidebar.classList.contains('active') && 
-                !sidebar.contains(e.target) && 
-                !toggleBtn.contains(e.target)) {
+            if (window.innerWidth <= 768 && sidebar.classList.contains('active') &&
+                !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
                 sidebar.classList.remove('active');
             }
         });
     }
 
-    // Logout Logic
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            if(confirm("Are you sure you want to logout?")) {
-                localStorage.removeItem("currentUser");
-                window.location.href = "index.html"; 
+        logoutBtn.addEventListener('click', async () => {
+            if (confirm("Are you sure you want to logout?")) {
+                try {
+                    const sb = getSupabase();
+                    await sb.auth.signOut();
+                } catch(e) {}
+                window.location.href = "index.html";
             }
         });
     }
 
-    // Navigation Logic
     menuItems.forEach(item => {
         item.addEventListener('click', () => {
             const target = item.getAttribute('data-target');
@@ -39,11 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (target === 'chatbot') window.location.href = 'chatbot.html';
             else if (target === 'hospitals') window.location.href = 'hospitals.html';
             else if (target === 'support') window.location.href = 'support.html';
-            else alert("This feature is coming soon!");
         });
     });
 
-    // Set Active State based on URL
     const path = window.location.pathname;
     menuItems.forEach(item => {
         item.classList.remove('active');

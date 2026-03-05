@@ -4,25 +4,174 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Health Assist AI</title>
-  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* PROFILE SETUP MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.hide { display: none; }
+    .profile-modal {
+      background: var(--container-bg); border: 1px solid var(--border-color);
+      border-radius: 24px; padding: 2.5rem; max-width: 440px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4); animation: fadeIn 0.4s ease;
+    }
+    .modal-icon { font-size: 3rem; color: var(--primary-accent); margin-bottom: 0.5rem; }
+    .profile-modal h2 { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .profile-modal p { color: var(--subheading-color); margin-bottom: 2rem; font-size: 0.95rem; }
+    .modal-field { margin-bottom: 1.2rem; }
+    .modal-field label { display: block; font-size: 0.9rem; font-weight: 500; color: var(--subheading-color); margin-bottom: 6px; }
+    .modal-field input, .modal-field select {
+      width: 100%; padding: 12px 16px; background: var(--input-bg);
+      border: 1px solid var(--border-color); border-radius: 12px;
+      color: var(--text-color); font-size: 1rem; outline: none; transition: 0.2s;
+    }
+    .modal-field input:focus, .modal-field select:focus { border-color: var(--primary-accent); }
+    .gender-btns { display: flex; gap: 10px; }
+    .gender-btn {
+      flex: 1; padding: 10px; background: var(--input-bg);
+      border: 2px solid var(--border-color); border-radius: 12px;
+      color: var(--text-color); cursor: pointer; font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;
+    }
+    .gender-btn.selected { border-color: var(--primary-accent); background: rgba(59,130,246,0.15); color: var(--primary-accent); }
+    .modal-save-btn {
+      width: 100%; padding: 13px; margin-top: 1rem;
+      background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+      color: white; border: none; border-radius: 12px; font-size: 1rem;
+      font-weight: 600; cursor: pointer; transition: transform 0.2s;
+    }
+    .modal-save-btn:hover { transform: scale(1.02); }
+    .modal-skip { text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--subheading-color); }
+    .modal-skip span { color: var(--primary-accent); cursor: pointer; }
+
+    /* DASHBOARD CARDS */
+    .dashboard-content { padding: 2rem; }
+    .dash-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .dash-greeting h1 { font-size: 2rem; font-weight: 700; }
+    .dash-greeting h1 span { background: linear-gradient(to right, var(--primary-accent), var(--secondary-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .dash-greeting p { color: var(--subheading-color); font-size: 1rem; margin-top: 4px; }
+    .edit-profile-btn {
+      display: flex; align-items: center; gap: 6px; padding: 9px 18px;
+      background: var(--input-bg); border: 1px solid var(--border-color);
+      border-radius: 10px; color: var(--text-color); cursor: pointer;
+      font-size: 0.9rem; font-weight: 500; transition: 0.2s;
+    }
+    .edit-profile-btn:hover { border-color: var(--primary-accent); color: var(--primary-accent); }
+    
+    /* Profile Stats Row */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card {
+      background: var(--container-bg); border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 1.3rem 1.5rem;
+      display: flex; flex-direction: column; gap: 6px; transition: 0.2s;
+    }
+    .stat-card:hover { border-color: var(--primary-accent); transform: translateY(-2px); }
+    .stat-card .sc-label { font-size: 0.8rem; color: var(--subheading-color); font-weight: 500; display: flex; align-items: center; gap: 5px; }
+    .stat-card .sc-label .material-symbols-rounded { font-size: 1rem; }
+    .stat-card .sc-value { font-size: 1.5rem; font-weight: 700; color: var(--text-color); }
+    .stat-card .sc-value.muted { color: var(--subheading-color); font-size: 1.1rem; font-weight: 500; }
+    .stat-card .sc-value.pending { color: #f59e0b; font-size: 0.95rem; }
+    .stat-card .sc-value.good { color: #10b981; }
+    .stat-card .sc-value.caution { color: #f59e0b; }
+    .stat-card .sc-value.alert-status { color: #ef4444; }
+
+    /* Health Status */
+    .health-status-card {
+      background: var(--container-bg); border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem;
+      display: flex; align-items: flex-start; gap: 1rem;
+    }
+    .hs-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(59,130,246,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .hs-icon .material-symbols-rounded { color: var(--primary-accent); font-size: 1.6rem; }
+    .hs-content h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    .hs-content p { color: var(--subheading-color); font-size: 0.9rem; line-height: 1.5; }
+    .hs-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-top: 8px; }
+    .hs-badge.pending { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .hs-badge.good { background: rgba(16,185,129,0.15); color: #10b981; }
+    .hs-badge.caution { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .hs-badge.alert-status { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    /* Recent History */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .section-header h2 { font-size: 1.2rem; font-weight: 600; }
+    .section-header .view-all { font-size: 0.85rem; color: var(--primary-accent); cursor: pointer; text-decoration: none; }
+    .history-grid { display: flex; flex-direction: column; gap: 10px; }
+    .history-item {
+      background: var(--container-bg); border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 1rem 1.2rem;
+      display: flex; align-items: flex-start; gap: 12px; transition: 0.2s; cursor: pointer;
+    }
+    .history-item:hover { border-color: var(--primary-accent); }
+    .hi-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(59,130,246,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .hi-icon .material-symbols-rounded { color: var(--primary-accent); font-size: 1.1rem; }
+    .hi-content { flex: 1; min-width: 0; }
+    .hi-question { font-size: 0.9rem; font-weight: 500; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hi-response { font-size: 0.8rem; color: var(--subheading-color); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hi-time { font-size: 0.75rem; color: var(--placeholder-color); flex-shrink: 0; }
+    .history-empty {
+      text-align: center; padding: 3rem 1rem; color: var(--subheading-color);
+      background: var(--container-bg); border: 1px dashed var(--border-color); border-radius: 16px;
+    }
+    .history-empty .material-symbols-rounded { font-size: 2.5rem; opacity: 0.4; display: block; margin-bottom: 0.5rem; }
+    .go-chat-btn {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 1rem;
+      padding: 10px 20px; background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+      color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-content { padding: 1rem; padding-top: 4rem; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
 </head>
 <body>
 
+  <!-- PROFILE SETUP MODAL -->
+  <div id="profile-modal" class="modal-overlay hide">
+    <div class="profile-modal">
+      <div class="modal-icon material-symbols-rounded">waving_hand</div>
+      <h2>Welcome! Tell us about yourself</h2>
+      <p>Help us personalize your health dashboard with a few quick details.</p>
+      <div class="modal-field">
+        <label>Your Age</label>
+        <input type="number" id="modal-age" placeholder="Enter your age" min="1" max="120">
+      </div>
+      <div class="modal-field">
+        <label>Gender</label>
+        <div class="gender-btns">
+          <button type="button" class="gender-btn" data-gender="Male">
+            <span class="material-symbols-rounded">male</span> Male
+          </button>
+          <button type="button" class="gender-btn" data-gender="Female">
+            <span class="material-symbols-rounded">female</span> Female
+          </button>
+          <button type="button" class="gender-btn" data-gender="Other">
+            <span class="material-symbols-rounded">person</span> Other
+          </button>
+        </div>
+      </div>
+      <div id="modal-error" class="error-msg"></div>
+      <button class="modal-save-btn" id="save-profile-btn">Save & Continue</button>
+      <div class="modal-skip">or <span id="skip-profile">Skip for now</span></div>
+    </div>
+  </div>
+
   <div class="layout-wrapper">
     <div class="pattern-overlay"></div>
-    
     <button id="sidebar-toggle" class="sidebar-toggle">
       <span class="material-symbols-rounded">menu</span>
     </button>
-    
     <aside class="sidebar glass-card">
       <div class="logo">
         <span class="logo-text">Health Assist</span>
         <span class="material-symbols-rounded">health_and_safety</span>
       </div>
-      
       <ul class="nav-menu">
         <li class="menu-item active" data-target="dashboard">
           <span class="material-symbols-rounded">home</span>
@@ -41,7 +190,6 @@
           <span class="menu-text">Contact Support</span>
         </li>
       </ul>
-
       <div class="sidebar-footer">
         <button id="logout-btn" class="nav-btn" title="Log Out">
           <span class="material-symbols-rounded">logout</span>
@@ -51,48 +199,57 @@
     </aside>
 
     <main class="dashboard-content content-area">
-      
-      <section class="profile-widget glass-card">
-        <div class="profile-header">
-          <div class="user-avatar">
-            <span class="material-symbols-rounded" id="avatar-icon">person</span>
-          </div>
-          <div class="user-identity">
-            <h2 id="dash-username">Loading...</h2>
-            <span class="badge status-active">Online</span>
-          </div>
+      <div class="dash-top">
+        <div class="dash-greeting">
+          <h1>Hello, <span id="dash-username">User</span> 👋</h1>
+          <p id="dash-subtitle">Here's your health overview</p>
         </div>
-        
-        <div class="profile-stats">
-          <div class="stat-group">
-            <span class="stat-label">Age</span>
-            <span class="stat-value text-muted" id="dash-age">--</span>
-          </div>
-          <div class="stat-group">
-            <span class="stat-label">Gender</span>
-            <span class="stat-value text-muted" id="dash-gender">--</span>
-          </div>
-          <div class="stat-group">
-            <span class="stat-label">Health Status</span>
-            <span class="stat-value highlight-pending" id="dash-status">Pending Review</span>
-            <span class="stat-subtext">Will update after consultation</span>
-          </div>
-        </div>
-      </section>
+        <button class="edit-profile-btn" id="edit-profile-btn">
+          <span class="material-symbols-rounded" style="font-size:1rem">edit</span>
+          Edit Profile
+        </button>
+      </div>
 
-      <section class="recent-history">
-        <h3 class="section-title">Recent Activity</h3>
-        <div class="history-list glass-card">
-          <div class="history-empty-state">
-            <span class="material-symbols-rounded">history</span>
-            <p>No recent conversations found. Open ChatBot to begin tracking your health journey.</p>
-          </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="sc-label"><span class="material-symbols-rounded">cake</span>Age</div>
+          <div class="sc-value muted" id="stat-age">--</div>
         </div>
-      </section>
+        <div class="stat-card">
+          <div class="sc-label"><span class="material-symbols-rounded">person</span>Gender</div>
+          <div class="sc-value muted" id="stat-gender">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label"><span class="material-symbols-rounded">forum</span>Consultations</div>
+          <div class="sc-value" id="stat-chats">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label"><span class="material-symbols-rounded">schedule</span>Last Active</div>
+          <div class="sc-value muted" id="stat-last">--</div>
+        </div>
+      </div>
 
+      <div class="health-status-card">
+        <div class="hs-icon"><span class="material-symbols-rounded">monitor_heart</span></div>
+        <div class="hs-content">
+          <h3>Health Status</h3>
+          <p id="hs-text">Start chatting with the AI to receive a health status assessment based on your queries.</p>
+          <span class="hs-badge pending" id="hs-badge">Pending Review</span>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Recent Conversations</h2>
+        <a class="view-all" href="chatbot.html">View ChatBot →</a>
+      </div>
+      <div class="history-grid" id="history-grid">
+        <!-- populated by JS -->
+      </div>
     </main>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
   <script src="dashboard.js"></script>
   <script src="sidebar.js"></script>
 </body>

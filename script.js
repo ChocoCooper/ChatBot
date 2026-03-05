@@ -1,32 +1,23 @@
 /* =========================================
    CHATBOT SESSION LOGIC
    ========================================= */
-const logoutBtn = document.getElementById("logout-button");
 const userGreeting = document.getElementById("user-greeting");
+let currentUserId = null;
+let currentUsername = null;
 
-// Check Session
-const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-if (!currentUser) {
-    window.location.href = "login.html";
-} else {
-    if (userGreeting) userGreeting.innerText = currentUser.username;
+async function initSession() {
+    const sb = getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = "login.html"; return; }
+
+    currentUserId = session.user.id;
+    const { data: profile } = await sb.from('profiles').select('username').eq('id', currentUserId).single();
+    currentUsername = profile?.username || 'User';
+    if (userGreeting) userGreeting.innerText = currentUsername;
+    initChatApp();
 }
 
-// Handle Logout
-if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-        if(confirm("Are you sure you want to logout?")) {
-            localStorage.removeItem("currentUser");
-            window.location.href = "index.html"; 
-        }
-    });
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-    if (currentUser) {
-        initChatApp();
-    }
-});
+window.addEventListener("DOMContentLoaded", initSession);
 
 
 /* =========================================
@@ -55,48 +46,31 @@ function initChatApp() {
     let isListening = false;
     let recognition = null;
     let chatHistory = [];
-    let selectedImage = null; 
+    let selectedImage = null;
 
-    const API_KEY = CONFIG.API_KEY; 
+    const API_KEY = CONFIG.API_KEY;
     const YOUTUBE_API_KEY = CONFIG.YOUTUBE_API_KEY;
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
     const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&key=${YOUTUBE_API_KEY}`;
 
-    // --- FIX: SCROLL WINDOW FUNCTION ---
-    // This now scrolls the main window instead of the container
-    const scrollToBottom = () => {
-        window.scrollTo({
-            top: document.body.scrollHeight,
-            behavior: "smooth"
-        });
-    }
+    const scrollToBottom = () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 
     // --- IMAGE HANDLING ---
     imageUploadButton.addEventListener("click", () => fileInput.click());
-
     fileInput.addEventListener("change", () => {
         const file = fileInput.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (e) => {
-            const base64String = e.target.result.split(",")[1];
-            selectedImage = {
-                inline_data: {
-                    mime_type: file.type,
-                    data: base64String
-                }
-            };
+            selectedImage = { inline_data: { mime_type: file.type, data: e.target.result.split(",")[1] } };
             imagePreview.src = e.target.result;
             imagePreviewContainer.classList.remove("hide");
             typingForm.querySelector(".typing-input").focus();
         };
         reader.readAsDataURL(file);
     });
-
     removeImageButton.addEventListener("click", () => {
-        selectedImage = null;
-        fileInput.value = "";
+        selectedImage = null; fileInput.value = "";
         imagePreviewContainer.classList.add("hide");
     });
 
@@ -105,52 +79,25 @@ function initChatApp() {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-            
-            recognition.onstart = () => {
-                isListening = true;
-                voiceInputButton.classList.add('listening');
-                voiceInputButton.innerHTML = 'mic';
-                voiceInputButton.style.color = '#ef4444'; 
-            };
-            
+            recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
+            recognition.onstart = () => { isListening = true; voiceInputButton.style.color = '#ef4444'; };
             recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                const typingInput = document.querySelector('.typing-input');
-                typingInput.value = transcript;
-                typingInput.focus();
+                typingForm.querySelector('.typing-input').value = event.results[0][0].transcript;
             };
-            
-            recognition.onend = () => {
-                isListening = false;
-                voiceInputButton.classList.remove('listening');
-                voiceInputButton.innerHTML = 'mic';
-                voiceInputButton.style.color = '';
-            };
-        } else {
-            voiceInputButton.style.display = 'none';
-        }
+            recognition.onend = () => { isListening = false; voiceInputButton.style.color = ''; };
+        } else { voiceInputButton.style.display = 'none'; }
     };
-
-    const toggleVoiceRecognition = () => {
-        if (!recognition) return;
-        isListening ? recognition.stop() : recognition.start();
-    };
+    const toggleVoiceRecognition = () => { if (!recognition) return; isListening ? recognition.stop() : recognition.start(); };
 
     // --- UI HELPERS ---
     const loadDataFromLocalstorage = () => {
         const savedChats = localStorage.getItem("saved-chats");
-        const isLightMode = (localStorage.getItem("themeColor") === "light_mode");
-
+        const isLightMode = localStorage.getItem("themeColor") === "light_mode";
         document.body.classList.toggle("light_mode", isLightMode);
         toggleThemeButton.innerText = isLightMode ? "dark_mode" : "light_mode";
-
         chatContainer.innerHTML = savedChats || '';
-        document.body.classList.toggle("hide-header", savedChats);
-        
-        scrollToBottom(); // Scroll on load
+        document.body.classList.toggle("hide-header", !!savedChats);
+        scrollToBottom();
     };
 
     const createMessageElement = (content, ...classes) => {
@@ -161,27 +108,19 @@ function initChatApp() {
     };
 
     const showTypingEffect = (text, textElement, incomingMessageDiv) => {
-        // 1. Use placeholders for icons
-        let processedText = text.replace(/\[CHECK\]/g, "___CHECK___")
-                                .replace(/\[WARNING\]/g, "___WARNING___");
-
-        // 2. Split by delimiters (icons and whitespace) to tokenize
+        let processedText = text.replace(/\[CHECK\]/g, "___CHECK___").replace(/\[WARNING\]/g, "___WARNING___");
         const words = processedText.split(/(___CHECK___|___WARNING___|\s+)/).filter(w => w && w.length > 0);
-        
         let currentWordIndex = 0;
-        
         typingIntervalId = setInterval(() => {
             if (currentWordIndex >= words.length) {
                 clearInterval(typingIntervalId);
                 isResponseGenerating = false;
                 sendMessageButton.innerText = "send";
                 incomingMessageDiv.querySelector(".icon").classList.remove("hide");
-                localStorage.setItem("saved-chats", chatContainer.innerHTML); 
+                localStorage.setItem("saved-chats", chatContainer.innerHTML);
                 return;
             }
-
             let word = words[currentWordIndex++];
-            
             if (word === "___CHECK___") {
                 textElement.innerHTML += `<span class="material-symbols-rounded" style="color: var(--secondary-accent); vertical-align: -6px;">check_circle</span>`;
             } else if (word === "___WARNING___") {
@@ -189,98 +128,86 @@ function initChatApp() {
             } else {
                 textElement.innerHTML += word.replace(/\n/g, "<br>");
             }
-
-            // FIX: Scroll window on every new word
             scrollToBottom();
         }, 25);
     };
 
-    // --- YOUTUBE INTEGRATION ---
+    // --- YOUTUBE ---
     const fetchYouTubeVideos = async (query) => {
         if (!query) return [];
-
-        // Filter out greetings and common conversational phrases to save API quota
         const skipPatterns = /^(hi|hello|hey|greetings|good\s(morning|afternoon|evening)|thanks|thank\syou|ok|okay|bye|goodbye|who\sare\syou|what\sis\syour\sname)(\s(there|bot|healthassist))?[\.!]?$/i;
-        if (skipPatterns.test(query.trim())) {
-            return [];
-        }
-
+        if (skipPatterns.test(query.trim())) return [];
         const cacheKey = `yt_cache_${query.trim().toLowerCase()}`;
         const cachedData = localStorage.getItem(cacheKey);
-
-        if (cachedData) {
-            try {
-                return JSON.parse(cachedData);
-            } catch (e) {
-                localStorage.removeItem(cacheKey);
-            }
-        }
-
+        if (cachedData) { try { return JSON.parse(cachedData); } catch(e) {} }
         try {
-            // Append 'medical health' to context to ensure relevant results
-            const searchUrl = `${YOUTUBE_API_URL}&q=${encodeURIComponent(query + " medical health")}`;
-            const response = await fetch(searchUrl);
+            const response = await fetch(`${YOUTUBE_API_URL}&q=${encodeURIComponent(query + " medical health")}`);
             const data = await response.json();
-            
-            if (data.items) {
-                try {
-                    localStorage.setItem(cacheKey, JSON.stringify(data.items));
-                } catch (e) {
-                    console.warn("Could not cache YouTube results:", e);
-                }
-            }
-            
+            if (data.items) { try { localStorage.setItem(cacheKey, JSON.stringify(data.items)); } catch(e) {} }
             return data.items || [];
-        } catch (error) {
-            console.error("Error fetching YouTube videos:", error);
-            return [];
-        }
+        } catch { return []; }
     };
 
     const renderVideoRecommendations = (videos) => {
         if (!videos || videos.length === 0) return null;
-
         const container = document.createElement("div");
         container.className = "video-recommendation-container";
-        
-        container.innerHTML = `
-            <p class="video-label">Recommended Videos:</p>
-            <div class="video-scroller"></div>
-        `;
-        
+        container.innerHTML = `<p class="video-label">Recommended Videos:</p><div class="video-scroller"></div>`;
         const scroller = container.querySelector(".video-scroller");
-
         videos.forEach(video => {
             const card = document.createElement("a");
             card.className = "video-card";
             card.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
             card.target = "_blank";
-            card.innerHTML = `
-                <img src="${video.snippet.thumbnails.medium.url}" class="video-thumb" alt="${video.snippet.title}">
-                <div class="video-info">
-                    <h4 class="video-title">${video.snippet.title}</h4>
-                    <p class="video-channel">${video.snippet.channelTitle}</p>
-                </div>
-            `;
+            card.innerHTML = `<img src="${video.snippet.thumbnails.medium.url}" class="video-thumb" alt="${video.snippet.title}"><div class="video-info"><h4 class="video-title">${video.snippet.title}</h4><p class="video-channel">${video.snippet.channelTitle}</p></div>`;
             scroller.appendChild(card);
         });
-
         return container;
+    };
+
+    // --- SAVE TO SUPABASE ---
+    const saveChatToSupabase = async (question, answer) => {
+        if (!currentUserId) return;
+        const sb = getSupabase();
+        try {
+            await sb.from('chat_history').insert({
+                user_id: currentUserId,
+                question: question || '[Image]',
+                answer: answer,
+                created_at: new Date().toISOString()
+            });
+            // Update health status based on response
+            await updateHealthStatus(sb, question, answer);
+        } catch(e) { console.warn('Could not save chat:', e); }
+    };
+
+    const updateHealthStatus = async (sb, question, answer) => {
+        const text = (question + ' ' + answer).toLowerCase();
+        let status = null;
+        const alertKeywords = ['severe', 'emergency', 'critical', 'cancer', 'tumor', 'stroke', 'heart attack', 'seizure', 'chest pain'];
+        const cautionKeywords = ['diabetes', 'hypertension', 'high blood pressure', 'chronic', 'asthma', 'thyroid', 'anxiety', 'depression'];
+        const goodKeywords = ['healthy', 'normal', 'fitness', 'exercise', 'nutrition', 'vitamins', 'wellness'];
+
+        if (alertKeywords.some(k => text.includes(k))) {
+            status = { label: 'Needs Attention', class: 'alert-status', summary: 'Urgent health topics detected in your recent conversations. Please consult a doctor.' };
+        } else if (cautionKeywords.some(k => text.includes(k))) {
+            status = { label: 'Monitoring Required', class: 'caution', summary: 'Chronic condition topics detected. Regular monitoring recommended.' };
+        } else if (goodKeywords.some(k => text.includes(k))) {
+            status = { label: 'Looking Good', class: 'good', summary: 'Your queries suggest a focus on wellness and preventive health.' };
+        }
+
+        if (status) {
+            await sb.from('profiles').update({ health_status: status }).eq('id', currentUserId);
+        }
     };
 
     // --- API INTERACTION ---
     const normalizeForCache = (text) => {
-        return text.toLowerCase()
-            .replace(/[^\w\s]/g, '') 
-            .replace(/\b(hi|hello|hey|greetings|please|help|tell|me|about|i|have|am|im|a|an|the|is|are|was|were|of|in|on|at|to|for|with|my|suffering|from)\b/g, '') 
-            .replace(/\s+/g, ' ') 
-            .trim();
+        return text.toLowerCase().replace(/[^\w\s]/g, '').replace(/\b(hi|hello|hey|greetings|please|help|tell|me|about|i|have|am|im|a|an|the|is|are|was|were|of|in|on|at|to|for|with|my|suffering|from)\b/g, '').replace(/\s+/g, ' ').trim();
     };
 
     const generateAPIResponse = async (incomingMessageDiv) => {
-        const textElement = incomingMessageDiv.querySelector(".text"); 
-        
-        // Check cache to save API quota
+        const textElement = incomingMessageDiv.querySelector(".text");
         let cacheKey = null;
         if (!selectedImage && userMessage) {
             const normalized = normalizeForCache(userMessage);
@@ -292,14 +219,11 @@ function initChatApp() {
                     chatHistory.push({ role: "model", parts: [{ text: cachedResponse }] });
                     showTypingEffect(cachedResponse, textElement, incomingMessageDiv);
                     incomingMessageDiv.classList.remove("loading");
-                    
+                    await saveChatToSupabase(userMessage, cachedResponse);
                     if (userMessage) {
                         fetchYouTubeVideos(userMessage).then(videos => {
-                            const videoContainer = renderVideoRecommendations(videos);
-                            if (videoContainer) {
-                                incomingMessageDiv.appendChild(videoContainer);
-                                scrollToBottom();
-                            }
+                            const vc = renderVideoRecommendations(videos);
+                            if (vc) { incomingMessageDiv.appendChild(vc); scrollToBottom(); }
                         });
                     }
                     return;
@@ -309,12 +233,7 @@ function initChatApp() {
 
         const userRequestParts = [{ text: userMessage }];
         if (selectedImage) userRequestParts.push(selectedImage);
-
-        const historyForAPI = [
-            ...chatHistory.slice(-10), 
-            { role: "user", parts: userRequestParts }
-        ];
-
+        const historyForAPI = [...chatHistory.slice(-10), { role: "user", parts: userRequestParts }];
         abortController = new AbortController();
 
         try {
@@ -322,54 +241,43 @@ function initChatApp() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 signal: abortController.signal,
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     contents: historyForAPI,
                     system_instruction: {
-                        parts: [{ text: `You are a clinical, highly concise Health Assist AI. 
-                        Follow these strict rules for every response:
-                        1. Be extremely crisp and direct. NO long introductory or concluding conversational filler.
-                        2. Keep your total response under 4 to 5 short sentences whenever possible.
-                        3. Use bullet points if listing symptoms, causes, or treatments.
-                        4. Use [CHECK] for proven remedies/medicines and [WARNING] for precautions/warnings.
-                        5. Be conversational (e.g., ask "How do you feel?") and only ask a follow-up question at the end if necessary.` }]
+                        parts: [{ text: `You are a clinical, highly concise Health Assist AI. Follow these strict rules for every response:
+1. Be extremely crisp and direct. NO long introductory or concluding conversational filler.
+2. Keep your total response under 4 to 5 short sentences whenever possible.
+3. Use bullet points if listing symptoms, causes, or treatments.
+4. Use [CHECK] for proven remedies/medicines and [WARNING] for precautions/warnings.
+5. Be conversational (e.g., ask "How do you feel?") and only ask a follow-up question at the end if necessary.` }]
                     }
                 }),
             });
 
             if (response.status === 429) throw new Error("⏳ Too fast! Wait 30s.");
-
             const data = await response.json();
             if (!response.ok) throw new Error(data.error.message || "Error!");
 
             let apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*/g, '');
-            
-            if (cacheKey) {
-                localStorage.setItem(cacheKey, apiResponse);
-            }
-            
+            if (cacheKey) localStorage.setItem(cacheKey, apiResponse);
+
             chatHistory.push({ role: "user", parts: [{ text: userMessage || "[Image]" }] });
             chatHistory.push({ role: "model", parts: [{ text: apiResponse }] });
 
-            selectedImage = null;
-            fileInput.value = "";
-            
-            showTypingEffect(apiResponse, textElement, incomingMessageDiv); 
+            // Save to Supabase
+            await saveChatToSupabase(userMessage, apiResponse);
 
-            // Fetch and display YouTube videos based on user query
+            selectedImage = null; fileInput.value = "";
+            showTypingEffect(apiResponse, textElement, incomingMessageDiv);
+
             if (userMessage) {
                 fetchYouTubeVideos(userMessage).then(videos => {
-                    const videoContainer = renderVideoRecommendations(videos);
-                    if (videoContainer) {
-                        incomingMessageDiv.appendChild(videoContainer);
-                        scrollToBottom();
-                    }
+                    const vc = renderVideoRecommendations(videos);
+                    if (vc) { incomingMessageDiv.appendChild(vc); scrollToBottom(); }
                 });
             }
-        } catch (error) { 
-            if (error.name === 'AbortError') {
-                incomingMessageDiv.remove();
-                return;
-            }
+        } catch (error) {
+            if (error.name === 'AbortError') { incomingMessageDiv.remove(); return; }
             isResponseGenerating = false;
             sendMessageButton.innerText = "send";
             textElement.innerText = error.message;
@@ -390,17 +298,15 @@ function initChatApp() {
                       <span onClick="copyMessage(this)" class="icon material-symbols-rounded hide">content_copy</span>`;
         const incomingMessageDiv = createMessageElement(html, "incoming", "loading");
         chatContainer.appendChild(incomingMessageDiv);
-        
-        scrollToBottom(); // Scroll when loading bubbles appear
-        
+        scrollToBottom();
         generateAPIResponse(incomingMessageDiv);
     };
 
     window.copyMessage = (copyButton) => {
         const messageText = copyButton.parentElement.querySelector(".text").innerText;
         navigator.clipboard.writeText(messageText);
-        copyButton.innerText = "done"; 
-        setTimeout(() => copyButton.innerText = "content_copy", 1000); 
+        copyButton.innerText = "done";
+        setTimeout(() => copyButton.innerText = "content_copy", 1000);
     };
 
     const handleOutgoingChat = () => {
@@ -411,38 +317,26 @@ function initChatApp() {
             sendMessageButton.innerText = "send";
             return;
         }
-
         userMessage = typingForm.querySelector(".typing-input").value.trim();
-        if(!userMessage && !selectedImage) return; 
-
+        if (!userMessage && !selectedImage) return;
         isResponseGenerating = true;
         sendMessageButton.innerText = "stop_circle";
+
         let messageHtml = '';
-        
         if (selectedImage) {
-            messageHtml = `<div class="message-content">
-                            <div class="text-wrapper">
-                                <img src="${imagePreview.src}" class="attachment-thumb">
-                                <p class="text"${!userMessage ? ' style="display:none"' : ''}></p>
-                            </div>
-                           </div>`;
+            messageHtml = `<div class="message-content"><div class="text-wrapper"><img src="${imagePreview.src}" class="attachment-thumb"><p class="text"${!userMessage ? ' style="display:none"' : ''}></p></div></div>`;
         } else {
-            messageHtml = `<div class="message-content">
-                            <p class="text"></p>
-                           </div>`;
+            messageHtml = `<div class="message-content"><p class="text"></p></div>`;
         }
 
         const outgoingMessageDiv = createMessageElement(messageHtml, "outgoing");
         outgoingMessageDiv.querySelector(".text").innerText = userMessage;
         chatContainer.appendChild(outgoingMessageDiv);
-        
-        typingForm.reset(); 
+        typingForm.reset();
         imagePreviewContainer.classList.add("hide");
         document.body.classList.add("hide-header");
-        
-        scrollToBottom(); // Scroll when user sends message
-        
-        setTimeout(showLoadingAnimation, 500); 
+        scrollToBottom();
+        setTimeout(showLoadingAnimation, 500);
     };
 
     // --- EVENT LISTENERS ---
@@ -455,7 +349,7 @@ function initChatApp() {
     deleteChatButton.addEventListener("click", () => {
         if (confirm("Delete all chats?")) {
             localStorage.removeItem("saved-chats");
-            chatHistory = []; 
+            chatHistory = [];
             loadDataFromLocalstorage();
         }
     });
@@ -467,13 +361,8 @@ function initChatApp() {
         });
     });
 
-    typingForm.addEventListener("submit", (e) => {
-        e.preventDefault(); 
-        handleOutgoingChat();
-    });
-
+    typingForm.addEventListener("submit", (e) => { e.preventDefault(); handleOutgoingChat(); });
     voiceInputButton.addEventListener("click", toggleVoiceRecognition);
-
     initSpeechRecognition();
     loadDataFromLocalstorage();
 }
