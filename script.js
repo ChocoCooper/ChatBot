@@ -51,7 +51,7 @@ function initChatApp() {
     const API_KEY = CONFIG.API_KEY;
     const YOUTUBE_API_KEY = CONFIG.YOUTUBE_API_KEY;
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
-    const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&key=${YOUTUBE_API_KEY}`;
+    const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&relevanceLanguage=en&key=${YOUTUBE_API_KEY}`;
 
     const scrollToBottom = () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 
