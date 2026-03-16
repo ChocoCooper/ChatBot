@@ -2,5 +2,5 @@
 const CONFIG = {
     API_KEY: "AIzaSyCExB2UpUqbupaIx8f8tdkxr1DTtOaxAiA",
     YOUTUBE_API_KEY: "AIzaSyB8optqezh3fNj_c8jiQRWAdgX1qsPjFwI"
-    NEWS_API_KEY = '160dc0cbaa4d6ea4025f5f7d0fe6eed5'; 
+    NEWS_API_KEY = '9f3e70d2c0d450f4fa1c51c0542d284f'; 
 };
