@@ -80,7 +80,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             loader.style.display = 'none';
             newsGrid.innerHTML = '<p class="error-msg" style="grid-column: 1/-1; text-align:center;">Failed to load live news. Please check your API key.</p>';
-            console.error("Error fetching news:", error);
         }
     }
 
