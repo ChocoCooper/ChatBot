@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // Note: Get a free API key from gnews.io or newsapi.org
-    const NEWS_API_KEY = '160dc0cbaa4d6ea4025f5f7d0fe6eed5'; 
+    const NEWS_API_KEY = CONFIG.NEWS_API_KEY; 
     const newsGrid = document.getElementById('news-grid');
     const loader = document.getElementById('news-loader');
     const filterBtns = document.querySelectorAll('.filter-btn');
