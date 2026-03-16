@@ -51,7 +51,7 @@ function initChatApp() {
     const API_KEY = CONFIG.API_KEY;
     const YOUTUBE_API_KEY = CONFIG.YOUTUBE_API_KEY;
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
-    const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&relevanceLanguage=en&key=${YOUTUBE_API_KEY}`;
+    const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&relevanceLanguage=en&regionCode=US&key=${YOUTUBE_API_KEY}`;
 
     const scrollToBottom = () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 
@@ -89,15 +89,61 @@ function initChatApp() {
     };
     const toggleVoiceRecognition = () => { if (!recognition) return; isListening ? recognition.stop() : recognition.start(); };
 
-    // --- UI HELPERS ---
-    const loadDataFromLocalstorage = () => {
-        const savedChats = localStorage.getItem("saved-chats");
+    // --- APP STATE & CLOUD SYNC ---
+    const loadAppInitialState = async () => {
+        // Theme
         const isLightMode = localStorage.getItem("themeColor") === "light_mode";
         document.body.classList.toggle("light_mode", isLightMode);
         toggleThemeButton.innerText = isLightMode ? "dark_mode" : "light_mode";
-        chatContainer.innerHTML = savedChats || '';
-        document.body.classList.toggle("hide-header", !!savedChats);
-        scrollToBottom();
+
+        // Cloud Chat Sync
+        if (!currentUserId) return;
+        const sb = getSupabase();
+        try {
+            const { data: chats, error } = await sb
+                .from('chat_history')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .order('created_at', { ascending: true });
+                
+            if (error) throw error;
+            
+            chatContainer.innerHTML = '';
+            chatHistory = [];
+
+            if (chats && chats.length > 0) {
+                document.body.classList.add("hide-header");
+                chats.forEach(chat => {
+                    // Update context history
+                    chatHistory.push({ role: "user", parts: [{ text: chat.question }] });
+                    chatHistory.push({ role: "model", parts: [{ text: chat.answer }] });
+
+                    // Render Outgoing
+                    let userHtml = `<div class="message-content"><p class="text">${chat.question.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p></div>`;
+                    const outgoingDiv = createMessageElement(userHtml, "outgoing");
+                    chatContainer.appendChild(outgoingDiv);
+
+                    // Render Incoming
+                    let processedAnswer = chat.answer.replace(/\[CHECK\]/g, `<span class="material-symbols-rounded" style="color: var(--secondary-accent); vertical-align: -6px;">check_circle</span>`)
+                                         .replace(/\[WARNING\]/g, `<span class="material-symbols-rounded" style="color: #ef4444; vertical-align: -6px;">warning</span>`)
+                                         .replace(/\n/g, "<br>");
+                    
+                    const aiHtml = `<div class="message-content">
+                                        <img class="avatar" src="gemini-avatar.png" alt="AI">
+                                        <p class="text">${processedAnswer}</p>
+                                    </div>
+                                    <div class="action-icons" style="display:flex; gap:8px; margin-top:8px; margin-left: 54px;">
+                                        <span onClick="copyMessage(this)" class="material-symbols-rounded" style="cursor:pointer; font-size: 1.1rem; color: var(--placeholder-color); transition:0.2s;" onmouseover="this.style.color='var(--primary-accent)'" onmouseout="this.style.color='var(--placeholder-color)'" title="Copy Text">content_copy</span>
+                                        <span onClick="speakMessage(this)" class="material-symbols-rounded speak-btn" style="cursor:pointer; font-size: 1.1rem; color: var(--placeholder-color); transition:0.2s;" onmouseover="this.style.color='var(--primary-accent)'" onmouseout="this.style.color='var(--placeholder-color)'" title="Read Aloud">volume_up</span>
+                                    </div>`;
+                    const incomingDiv = createMessageElement(aiHtml, "incoming");
+                    chatContainer.appendChild(incomingDiv);
+                });
+                scrollToBottom();
+            }
+        } catch (e) {
+            console.error("Failed to load chat history:", e);
+        }
     };
 
     const createMessageElement = (content, ...classes) => {
@@ -116,8 +162,8 @@ function initChatApp() {
                 clearInterval(typingIntervalId);
                 isResponseGenerating = false;
                 sendMessageButton.innerText = "send";
-                incomingMessageDiv.querySelector(".icon").classList.remove("hide");
-                localStorage.setItem("saved-chats", chatContainer.innerHTML);
+                const actions = incomingMessageDiv.querySelector(".action-icons");
+                if (actions) actions.classList.remove("hide");
                 return;
             }
             let word = words[currentWordIndex++];
@@ -137,14 +183,47 @@ function initChatApp() {
         if (!query) return [];
         const skipPatterns = /^(hi|hello|hey|greetings|good\s(morning|afternoon|evening)|thanks|thank\syou|ok|okay|bye|goodbye|who\sare\syou|what\sis\syour\sname)(\s(there|bot|healthassist))?[\.!]?$/i;
         if (skipPatterns.test(query.trim())) return [];
-        const cacheKey = `yt_cache_${query.trim().toLowerCase()}`;
+        
+        const normalizedQuery = query.trim().toLowerCase();
+        const cacheKey = `yt_cache_${normalizedQuery}`;
+        const sb = getSupabase();
+
+        // 1. Check Supabase Cloud Cache
+        try {
+            const { data: cacheRow, error } = await sb.from('youtube_cache')
+                .select('data')
+                .eq('query', normalizedQuery)
+                .maybeSingle();
+            
+            if (cacheRow && cacheRow.data) {
+                try { localStorage.setItem(cacheKey, JSON.stringify(cacheRow.data)); } catch(e) {}
+                return cacheRow.data;
+            }
+        } catch (e) {
+            console.warn("Supabase cache read failed:", e);
+        }
+
+        // 2. Check Local Storage Fallback
         const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) { try { return JSON.parse(cachedData); } catch(e) {} }
+        
+        // 3. Fetch from YouTube API
         try {
-            const response = await fetch(`${YOUTUBE_API_URL}&q=${encodeURIComponent(query + " medical health")}`);
+            const response = await fetch(`${YOUTUBE_API_URL}&q=${encodeURIComponent(query + " medical health in English")}`);
             const data = await response.json();
-            if (data.items) { try { localStorage.setItem(cacheKey, JSON.stringify(data.items)); } catch(e) {} }
-            return data.items || [];
+            const videos = data.items || [];
+            
+            if (videos.length > 0) {
+                try { localStorage.setItem(cacheKey, JSON.stringify(videos)); } catch(e) {}
+                // Save to Supabase Cache
+                try {
+                    await sb.from('youtube_cache').upsert(
+                        { query: normalizedQuery, data: videos },
+                        { onConflict: 'query' }
+                    );
+                } catch(e) { console.warn("Supabase cache write failed:", e); }
+            }
+            return videos;
         } catch { return []; }
     };
 
@@ -176,6 +255,7 @@ function initChatApp() {
                 answer: answer,
                 created_at: new Date().toISOString()
             });
+
             // Update health status based on response
             await updateHealthStatus(sb, question, answer);
         } catch(e) { console.warn('Could not save chat:', e); }
@@ -295,7 +375,10 @@ function initChatApp() {
                             <div class="loading-bar"></div><div class="loading-bar"></div><div class="loading-bar"></div>
                         </div>
                       </div>
-                      <span onClick="copyMessage(this)" class="icon material-symbols-rounded hide">content_copy</span>`;
+                      <div class="action-icons hide" style="display:flex; gap:8px; margin-top:8px; margin-left: 54px;">
+                          <span onClick="copyMessage(this)" class="material-symbols-rounded" style="cursor:pointer; font-size: 1.1rem; color: var(--placeholder-color); transition:0.2s;" onmouseover="this.style.color='var(--primary-accent)'" onmouseout="this.style.color='var(--placeholder-color)'" title="Copy Text">content_copy</span>
+                          <span onClick="speakMessage(this)" class="material-symbols-rounded speak-btn" style="cursor:pointer; font-size: 1.1rem; color: var(--placeholder-color); transition:0.2s;" onmouseover="this.style.color='var(--primary-accent)'" onmouseout="this.style.color='var(--placeholder-color)'" title="Read Aloud">volume_up</span>
+                      </div>`;
         const incomingMessageDiv = createMessageElement(html, "incoming", "loading");
         chatContainer.appendChild(incomingMessageDiv);
         scrollToBottom();
@@ -303,10 +386,27 @@ function initChatApp() {
     };
 
     window.copyMessage = (copyButton) => {
-        const messageText = copyButton.parentElement.querySelector(".text").innerText;
+        const messageText = copyButton.closest(".message").querySelector(".text").innerText;
         navigator.clipboard.writeText(messageText);
         copyButton.innerText = "done";
         setTimeout(() => copyButton.innerText = "content_copy", 1000);
+    };
+
+    window.speakMessage = (btn) => {
+        const messageText = btn.closest(".message").querySelector(".text").innerText;
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            if (btn.innerText === "volume_off") {
+                btn.innerText = "volume_up";
+                return;
+            }
+        }
+        document.querySelectorAll('.speak-btn').forEach(b => b.innerText = 'volume_up');
+        
+        const utterance = new SpeechSynthesisUtterance(messageText);
+        utterance.onend = () => { btn.innerText = "volume_up"; };
+        btn.innerText = "volume_off";
+        window.speechSynthesis.speak(utterance);
     };
 
     const handleOutgoingChat = () => {
@@ -346,11 +446,18 @@ function initChatApp() {
         toggleThemeButton.innerText = isLightMode ? "dark_mode" : "light_mode";
     });
 
-    deleteChatButton.addEventListener("click", () => {
-        if (confirm("Delete all chats?")) {
+    deleteChatButton.addEventListener("click", async () => {
+        if (confirm("Delete all chat history from your account?")) {
             localStorage.removeItem("saved-chats");
             chatHistory = [];
-            loadDataFromLocalstorage();
+            
+            if (currentUserId) {
+                const sb = getSupabase();
+                await sb.from('chat_history').delete().eq('user_id', currentUserId);
+            }
+            
+            chatContainer.innerHTML = '';
+            document.body.classList.remove("hide-header");
         }
     });
 
@@ -364,5 +471,5 @@ function initChatApp() {
     typingForm.addEventListener("submit", (e) => { e.preventDefault(); handleOutgoingChat(); });
     voiceInputButton.addEventListener("click", toggleVoiceRecognition);
     initSpeechRecognition();
-    loadDataFromLocalstorage();
+    loadAppInitialState();
 }

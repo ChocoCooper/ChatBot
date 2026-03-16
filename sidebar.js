@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target === 'dashboard') window.location.href = 'dashboard.html';
             else if (target === 'chatbot') window.location.href = 'chatbot.html';
             else if (target === 'hospitals') window.location.href = 'hospitals.html';
+            else if (target === 'articles') window.location.href = 'articles.html'; // New page link
             else if (target === 'support') window.location.href = 'support.html';
         });
     });
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (path.includes('dashboard.html') && target === 'dashboard') item.classList.add('active');
         if (path.includes('chatbot.html') && target === 'chatbot') item.classList.add('active');
         if (path.includes('hospitals.html') && target === 'hospitals') item.classList.add('active');
+        if (path.includes('articles.html') && target === 'articles') item.classList.add('active'); // New active state
         if (path.includes('support.html') && target === 'support') item.classList.add('active');
     });
 });

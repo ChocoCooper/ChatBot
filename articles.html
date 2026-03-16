@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health News - Health Assist AI</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+    <div class="layout-wrapper">
+        <div class="pattern-overlay"></div>
+        
+        <button id="sidebar-toggle" class="sidebar-toggle">
+            <span class="material-symbols-rounded">menu</span>
+        </button>
+
+        <aside class="sidebar glass-card">
+            <div class="logo">
+                <span class="logo-text">Health Assist</span>
+                <span class="material-symbols-rounded">health_and_safety</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="menu-item" data-target="dashboard">
+                    <span class="material-symbols-rounded">home</span>
+                    <span class="menu-text">Home</span>
+                </li>
+                <li class="menu-item" data-target="chatbot">
+                    <span class="material-symbols-rounded">forum</span>
+                    <span class="menu-text">ChatBot</span>
+                </li>
+                <li class="menu-item" data-target="hospitals">
+                    <span class="material-symbols-rounded">local_hospital</span>
+                    <span class="menu-text">Nearby Hospitals</span>
+                </li>
+                <li class="menu-item" data-target="support">
+                    <span class="material-symbols-rounded">contact_phone</span>
+                    <span class="menu-text">Contact Support</span>
+                </li>
+                <li class="menu-item active" data-target="articles">
+                    <span class="material-symbols-rounded">newspaper</span>
+                    <span class="menu-text">Health News</span>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="nav-btn" title="Log Out">
+                    <span class="material-symbols-rounded">logout</span>
+                    <span class="menu-text">Log Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="content-area articles-page">
+            <header class="articles-header">
+                <h1>Daily Health Feed</h1>
+                <p>Real-time medical news, personalized for your wellness journey.</p>
+            </header>
+
+            <div class="category-filters" id="category-filters">
+                <button class="filter-btn active" data-query="For You">For You</button>
+                <button class="filter-btn" data-query="Nutrition">Nutrition</button>
+                <button class="filter-btn" data-query="Mental Health">Mental Health</button>
+                <button class="filter-btn" data-query="Medical Research">Medical Research</button>
+            </div>
+
+            <div id="news-loader" class="list-spinner"></div>
+            
+            <div id="news-grid" class="news-grid">
+                </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="articles.js"></script>
+</body>
+</html>
