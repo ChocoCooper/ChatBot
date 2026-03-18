@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Auth guard
     const { data: { session } } = await sb.auth.getSession();
-    if (!session) { window.location.href = "login.html"; return; }
+    if (!session) { window.location.href = "/login"; return; }
 
     const userId = session.user.id;
     let profile = null;
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="history-empty">
                     <span class="material-symbols-rounded">chat_bubble_outline</span>
                     <p>No conversations yet. Start chatting with the AI!</p>
-                    <a href="chatbot.html" class="go-chat-btn">
+                    <a href="/chatbot" class="go-chat-btn">
                         <span class="material-symbols-rounded" style="font-size:1rem">forum</span>
                         Open ChatBot
                     </a>
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="hi-response">${escHtml(chat.answer?.substring(0, 120) || '')}…</div>
                 </div>
                 <div class="hi-time">${timeAgo(chat.created_at)}</div>`;
-            item.addEventListener('click', () => { window.location.href = 'chatbot.html'; });
+            item.addEventListener('click', () => { window.location.href = '/chatbot'; });
             grid.appendChild(item);
         });
 

@@ -8,7 +8,7 @@ window.hidePreloader = () => {
 
 window.addEventListener('load', () => {
     // Only auto-hide on window load for pages that don't fetch dynamic content immediately
-    if (window.location.pathname.includes('hospitals.html')) {
+    if (window.location.pathname.includes('hospitals')) {
         window.hidePreloader();
     }
     // Set a safety timeout for other pages in case data fetching fails or takes too long
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const sb = getSupabase();
                     await sb.auth.signOut();
                 } catch(e) {}
-                window.location.href = "index.html";
+                window.location.href = "/";
             }
         });
     }
@@ -46,11 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     menuItems.forEach(item => {
         item.addEventListener('click', () => {
             const target = item.getAttribute('data-target');
-            if (target === 'dashboard') window.location.href = 'dashboard.html';
-            else if (target === 'chatbot') window.location.href = 'chatbot.html';
-            else if (target === 'hospitals') window.location.href = 'hospitals.html';
-            else if (target === 'articles') window.location.href = 'articles.html';
-            else if (target === 'support') window.location.href = 'support.html';
+            if (target === 'dashboard') window.location.href = '/dashboard';
+            else if (target === 'chatbot') window.location.href = '/chatbot';
+            else if (target === 'hospitals') window.location.href = '/hospitals';
+            else if (target === 'articles') window.location.href = '/articles';
+            else if (target === 'support') window.location.href = '/support';
         });
     });
 
@@ -58,10 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
     menuItems.forEach(item => {
         item.classList.remove('active');
         const target = item.getAttribute('data-target');
-        if (path.includes('dashboard.html') && target === 'dashboard') item.classList.add('active');
-        if (path.includes('chatbot.html') && target === 'chatbot') item.classList.add('active');
-        if (path.includes('hospitals.html') && target === 'hospitals') item.classList.add('active');
-        if (path.includes('articles.html') && target === 'articles') item.classList.add('active');
-        if (path.includes('support.html') && target === 'support') item.classList.add('active');
+        if (path.includes('dashboard') && target === 'dashboard') item.classList.add('active');
+        if (path.includes('chatbot') && target === 'chatbot') item.classList.add('active');
+        if (path.includes('hospitals') && target === 'hospitals') item.classList.add('active');
+        if (path.includes('articles') && target === 'articles') item.classList.add('active');
+        if (path.includes('support') && target === 'support') item.classList.add('active');
     });
 });

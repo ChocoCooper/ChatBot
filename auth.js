@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if already logged in
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
-        window.location.href = "dashboard.html";
+        window.location.href = "/dashboard";
         return;
     }
 
@@ -178,6 +178,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        window.location.href = "dashboard.html";
+        window.location.href = "/dashboard";
     });
 });

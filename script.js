@@ -8,7 +8,7 @@ let currentUsername = null;
 async function initSession() {
     const sb = getSupabase();
     const { data: { session } } = await sb.auth.getSession();
-    if (!session) { window.location.href = "login.html"; return; }
+    if (!session) { window.location.href = "/login"; return; }
 
     currentUserId = session.user.id;
     const { data: profile } = await sb.from('profiles').select('username').eq('id', currentUserId).single();
