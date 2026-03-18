@@ -48,10 +48,8 @@ function initChatApp() {
     let chatHistory = [];
     let selectedImage = null;
 
-    const API_KEY = CONFIG.API_KEY;
-    const YOUTUBE_API_KEY = CONFIG.YOUTUBE_API_KEY;
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
-    const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&relevanceLanguage=en&regionCode=US&key=${YOUTUBE_API_KEY}`;
+    const API_URL = `/.netlify/functions/getGemini`;
+    const YOUTUBE_API_URL = `/.netlify/functions/getYoutube`;
 
     const scrollToBottom = () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 
@@ -222,7 +220,7 @@ function initChatApp() {
         
         // 3. Fetch from YouTube API
         try {
-            const response = await fetch(`${YOUTUBE_API_URL}&q=${encodeURIComponent(query + " medical health in English")}`);
+            const response = await fetch(`${YOUTUBE_API_URL}?q=${encodeURIComponent(query + " medical health in English")}`);
             const data = await response.json();
             const videos = data.items || [];
             
