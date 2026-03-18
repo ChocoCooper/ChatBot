@@ -4,7 +4,10 @@ exports.handler = async function(event, context) {
   
   // Extract the search query
   const query = event.queryStringParameters.q || '';
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&relevanceLanguage=en&regionCode=US&key=${apiKey}&q=${encodeURIComponent(query)}`;
+  
+  // Append negative keywords to strictly filter out rhymes, kid's songs, and vocabulary lessons
+  const refinedQuery = `${query} -kids -rhymes -song -toddler -lullaby -vocabulary`;
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&type=video&videoDuration=medium&relevanceLanguage=en&regionCode=US&key=${apiKey}&q=${encodeURIComponent(refinedQuery)}`;
 
   try {
     const response = await fetch(url);
