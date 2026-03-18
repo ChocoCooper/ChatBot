@@ -220,7 +220,7 @@ function initChatApp() {
         
         // 3. Fetch from YouTube API
         try {
-            const response = await fetch(`${YOUTUBE_API_URL}?q=${encodeURIComponent(query + " medical health in English")}`);
+            const response = await fetch(`${YOUTUBE_API_URL}?q=${encodeURIComponent(query + " doctor medical health explanation")}`);
             const data = await response.json();
             const videos = data.items || [];
             
