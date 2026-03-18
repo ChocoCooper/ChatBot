@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Note: Get a free API key from gnews.io or newsapi.org
-    const NEWS_API_KEY = CONFIG.NEWS_API_KEY; 
     const newsGrid = document.getElementById('news-grid');
     const loader = document.getElementById('news-loader');
     const filterBtns = document.querySelectorAll('.filter-btn');
@@ -54,12 +52,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
-        // Using GNews API (free tier allows browser requests)
-        const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(searchQuery)}&lang=en&max=9&apikey=${NEWS_API_KEY}`;
+        // Call your own secure Netlify function
+        const url = `/.netlify/functions/getNews?q=${encodeURIComponent(searchQuery)}`;
 
         try {
             const response = await fetch(url);
             const data = await response.json();
+            console.log("Data from Netlify Function:", data);
             
             loader.style.display = 'none';
             
@@ -80,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             loader.style.display = 'none';
             newsGrid.innerHTML = '<p class="error-msg" style="grid-column: 1/-1; text-align:center;">Failed to load live news. Please check your API key.</p>';
+            console.error("Error fetching news:", error);
         }
     }
 

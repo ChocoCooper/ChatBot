@@ -138,6 +138,14 @@ function initChatApp() {
                                     </div>`;
                     const incomingDiv = createMessageElement(aiHtml, "incoming");
                     chatContainer.appendChild(incomingDiv);
+
+                    // Restore YouTube recommendations for historical messages
+                    if (chat.question && chat.question !== '[Image]') {
+                        fetchYouTubeVideos(chat.question).then(videos => {
+                            const vc = renderVideoRecommendations(videos);
+                            if (vc) { incomingDiv.appendChild(vc); scrollToBottom(); }
+                        });
+                    }
                 });
                 scrollToBottom();
             }
@@ -454,6 +462,7 @@ function initChatApp() {
             if (currentUserId) {
                 const sb = getSupabase();
                 await sb.from('chat_history').delete().eq('user_id', currentUserId);
+                await sb.from('profiles').update({ health_status: null }).eq('id', currentUserId);
             }
             
             chatContainer.innerHTML = '';

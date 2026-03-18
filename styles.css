@@ -228,6 +228,7 @@ body.hide-header .header {
   margin-top: 3rem;
   overflow-x: auto;
   padding-bottom: 10px;
+  padding-top: 10px;
   scrollbar-width: none;
 }
 
