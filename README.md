@@ -1,4 +1,4 @@
-# Project Title - ***"HealthAssist: AI-Driven Public Health Chatbot for Disease Awareness"***
+## *"HealthAssist: AI-Driven Public Health Chatbot for Disease Awareness"*
 
 ## Project Overview
 
