@@ -97,7 +97,10 @@ function initChatApp() {
         toggleThemeButton.innerText = isLightMode ? "dark_mode" : "light_mode";
 
         // Cloud Chat Sync
-        if (!currentUserId) return;
+        if (!currentUserId) {
+            if (window.hidePreloader) window.hidePreloader();
+            return;
+        }
         const sb = getSupabase();
         try {
             const { data: chats, error } = await sb
@@ -149,8 +152,10 @@ function initChatApp() {
                 });
                 scrollToBottom();
             }
+            if (window.hidePreloader) window.hidePreloader();
         } catch (e) {
             console.error("Failed to load chat history:", e);
+            if (window.hidePreloader) window.hidePreloader();
         }
     };
 

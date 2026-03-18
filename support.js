@@ -12,10 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
             allHospitals = data;
             populateFilters(data);
             renderContacts(data.filter(h => h.city === 'Chennai')); // Initially show Chennai
+            if (window.hidePreloader) window.hidePreloader();
         })
         .catch(error => {
             console.error('Error fetching contact data:', error);
             contactList.innerHTML = '<p class="error-msg">Could not load hospital data.</p>';
+            if (window.hidePreloader) window.hidePreloader();
         });
 
     function populateFilters(hospitals) {

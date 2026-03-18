@@ -1567,3 +1567,31 @@ body.hide-header .header {
 .news-card:hover .news-footer .material-symbols-rounded {
     transform: translateX(4px);
 }
+
+/* =========================================
+   PRELOADER STYLES
+   ========================================= */
+#page-preloader {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-color);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+#page-preloader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.preloader-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-top: 4px solid var(--primary-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}

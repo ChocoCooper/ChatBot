@@ -1,3 +1,20 @@
+window.hidePreloader = () => {
+    const preloader = document.getElementById('page-preloader');
+    if (preloader) {
+        preloader.classList.add('fade-out');
+        setTimeout(() => preloader.remove(), 400); // Remove from DOM after fade out
+    }
+};
+
+window.addEventListener('load', () => {
+    // Only auto-hide on window load for pages that don't fetch dynamic content immediately
+    if (window.location.pathname.includes('hospitals.html')) {
+        window.hidePreloader();
+    }
+    // Set a safety timeout for other pages in case data fetching fails or takes too long
+    setTimeout(window.hidePreloader, 3000); 
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.querySelector('.sidebar');
     const toggleBtn = document.getElementById('sidebar-toggle');

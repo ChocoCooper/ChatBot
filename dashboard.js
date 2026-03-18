@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </a>
                 </div>`;
             statChats.textContent = '0';
+            if (window.hidePreloader) window.hidePreloader();
             return;
         }
 
@@ -147,6 +148,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.addEventListener('click', () => { window.location.href = 'chatbot.html'; });
             grid.appendChild(item);
         });
+
+        if (window.hidePreloader) window.hidePreloader();
     }
 
     function escHtml(str) {

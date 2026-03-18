@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         newsGrid.innerHTML = '<p class="empty-state">No news articles found for this topic today.</p>';
                     }
+                    if (window.hidePreloader) window.hidePreloader();
                     return; // Exit early, use cached data
                 }
             } catch (e) {
@@ -76,10 +77,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 newsGrid.innerHTML = '<p class="empty-state">No news articles found for this topic today.</p>';
             }
+            if (window.hidePreloader) window.hidePreloader();
         } catch (error) {
             loader.style.display = 'none';
             newsGrid.innerHTML = '<p class="error-msg" style="grid-column: 1/-1; text-align:center;">Failed to load live news. Please check your API key.</p>';
             console.error("Error fetching news:", error);
+            if (window.hidePreloader) window.hidePreloader();
         }
     }
 
